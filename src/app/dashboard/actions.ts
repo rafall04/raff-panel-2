@@ -22,6 +22,13 @@ interface SSIDInfo {
     ssid: SSID[];
 }
 
+interface CustomerInfo {
+    name: string;
+    packageName: string;
+    monthlyBill: number;
+    dueDate: string;
+}
+
 const allowSsid = ["1", "5"];
 const rebootRouter = async () => {
     try {
@@ -152,9 +159,32 @@ const setSSIDName = async (id: string, newName: string) => {
     }
 }
 
-export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName };
+const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
+    try {
+        const session = await getAuthSession();
+        if (!session?.user?.id) {
+            // This case should ideally not happen if the page is protected
+            return null;
+        }
+        const res = await fetch(`${process.env.API_URL}/api/user/${session.user.id}`);
+        if (!res.ok) {
+            console.error(`Error fetching customer data: ${res.status} ${res.statusText}`);
+            return null;
+        }
+        const data = await res.json();
+        // Assuming the API returns data that matches the CustomerInfo interface.
+        // If the data is nested, e.g., { user: {...} }, this needs to be data.user
+        return data as CustomerInfo;
+    } catch (error) {
+        console.error("Failed to fetch customer info:", error);
+        return null;
+    }
+}
+
+export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo };
 export type {
     SSID,
     SSIDInfo,
-    AssociatedDevice
+    AssociatedDevice,
+    CustomerInfo
 }

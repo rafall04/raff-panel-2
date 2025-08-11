@@ -8,7 +8,7 @@ import { Wifi, ChevronDown } from 'lucide-react';
 const allowSsid = ["1", "5"];
 
 export default function WifiView({ ssidInfo: initialSsidInfo }: { ssidInfo: SSIDInfo }) {
-    const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
+    const [ssidInfo] = useState<SSIDInfo>(initialSsidInfo);
     const [selectedSSID, setSelectedSSID] = useState<string>(ssidInfo.ssid[0].id);
     const [syncedSsids, setSyncedSsids] = useState<string[]>(allowSsid);
 

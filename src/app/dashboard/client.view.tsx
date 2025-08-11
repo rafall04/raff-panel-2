@@ -3,10 +3,12 @@
 import { useState } from "react";
 import type { SSIDInfo, CustomerInfo } from "./actions";
 import { getSSIDInfo, rebootRouter, refreshObject } from "./actions";
+import { signOut } from "next-auth/react";
 
 import Form from "./client.form";
-import { signOut } from "next-auth/react";
 import CustomerView from "./customer.view";
+import { Wifi, Power, RefreshCw, LogOut, ChevronDown, Check, X } from 'lucide-react';
+
 const allowSsid = ["1", "5"];
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null }) {
@@ -45,7 +47,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
 
     const openModal = (action: 'reboot' | 'logout', description: string, text: string) => {
         setModalState({ action, description, text });
-        (document.getElementById("confirmation_modal") as HTMLInputElement).checked = true;
+        (document.getElementById("confirmation_modal") as HTMLDialogElement)?.showModal();
     };
 
     const confirmModalAction = () => {
@@ -55,112 +57,142 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
             handleLogout();
         }
         setModalState(null);
+        (document.getElementById("confirmation_modal") as HTMLDialogElement)?.close();
     };
+
+    const isOnline = new Date(ssidInfo.lastInform).getTime() > (new Date().getTime() - 86700000);
 
     return (
         <>
             {loading && (
-                <div className="toast toast-top toast-start z-[999]">
-                    <div className="alert alert-info">
+                <div className="toast toast-top toast-center z-[999]">
+                    <div className="alert alert-info bg-primary text-white">
+                        <RefreshCw className="animate-spin" />
                         <span>Loading...</span>
                     </div>
                 </div>
             )}
-            <input type="checkbox" id="confirmation_modal" className="modal-toggle" />
-            <div className="modal" role="dialog">
-                <div className="modal-box">
-                    <h3 className="text-lg font-bold">Are You Sure?</h3>
+
+            <dialog id="confirmation_modal" className="modal">
+                <div className="modal-box bg-white/10 backdrop-blur-lg border border-white/20">
+                    <h3 className="font-bold text-lg">Are You Sure?</h3>
                     <p className="py-4">{modalState?.text}</p>
                     <div className="modal-action">
-                        <label htmlFor="confirmation_modal" onClick={confirmModalAction} className="btn btn-error">Confirm</label>
-                        <label htmlFor="confirmation_modal" className="btn">Cancel</label>
+                        <button onClick={confirmModalAction} className="btn btn-error"><Check className="mr-2"/>Confirm</button>
+                        <form method="dialog">
+                            <button className="btn"><X className="mr-2"/>Cancel</button>
+                        </form>
                     </div>
                 </div>
-            </div>
-            <div className="navbar bg-base-100">
+            </dialog>
+
+            <div className="navbar bg-base-100/5 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
                 <div className="navbar-start">
-                    <a className="btn btn-ghost text-xl">RAF PANEL</a>
+                    <a className="btn btn-ghost text-xl text-white">RAF PANEL</a>
                 </div>
                 <div className="navbar-end">
-                    <a className="btn" onClick={() => openModal('logout', 'Logout', 'You will be logged out.')}>Logout</a>
+                    <button className="btn btn-ghost text-white" onClick={() => openModal('logout', 'Logout', 'You will be logged out.')}>
+                        <LogOut size={20}/>
+                        Logout
+                    </button>
                 </div>
             </div>
-            <div className="container mx-auto pt-8 pb-4 px-6">
-                <CustomerView customerInfo={customerInfo} />
-                <div className="flex flex-col sm:flex-row w-full sm:justify-between mb-1 sm:items-center">
-                    <div className="form-control">
-                        <label className="label cursor-pointer">
-                            <span className="label-text mr-1">Sync SSID</span>
-                            <input 
-                                type="checkbox" 
-                                className="toggle" 
-                                checked={syncedSsids.length > 0} 
-                                onChange={(e) => setSyncedSsids(e.target.checked ? allowSsid : [])} 
-                            />
-                        </label>
+
+            <div className="container mx-auto p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                    {/* Customer Info Card */}
+                    <div className="xl:col-span-1">
+                        <CustomerView customerInfo={customerInfo} />
                     </div>
-                    <div className="dropdown dropdown-bottom dropdown-end ml-auto">
-                        <div tabIndex={0} role="button" className={`btn m-1 ${syncedSsids.length > 0 ? 'btn-disabled' : ''}`}>
-                            {ssidInfo.ssid.find(v => v.id == selectedSSID)?.name || ssidInfo.ssid[0].name}
-                            <i>
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                    <path d="M12 16L6 10H18L12 16Z"></path>
-                                </svg>
-                            </i>
-                        </div>
-                        <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-                            {ssidInfo.ssid.map((v, i) => (
-                                <li key={i} onClick={() => setSelectedSSID(v.id)}>
-                                    <button>{v.name}</button>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-                <div className="card bg-base-100 w-full shrink-0 shadow-2xl mb-4">
-                    <div className="card-body">
-                        <div className="flex flex-wrap items-center justify-between">
-                            <div className="">
-                                <p>Status: <span className={"badge " + (new Date(ssidInfo.lastInform).getTime() > (new Date().getTime() - 86700000) ? 'badge-accent' : 'badge-ghost')}>{new Date(ssidInfo.lastInform).getTime() > (new Date().getTime() - 86700000) ? 'Online' : 'No update in 24H'}</span></p>
-                                <p>Uptime: {ssidInfo.uptime || "Not Available"}</p>
-                                <p>Last Information: {new Date(ssidInfo.lastInform).toLocaleDateString()} {new Date(ssidInfo.lastInform).toLocaleTimeString()}</p>
+
+                    {/* Status Card */}
+                    <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl xl:col-span-2">
+                        <div className="card-body">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h2 className="card-title text-white">Device Status</h2>
+                                    <p className="text-sm text-gray-400">Uptime: {ssidInfo.uptime || "Not Available"}</p>
+                                    <p className="text-sm text-gray-400">Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
+                                    <span className="text-white">{isOnline ? 'Online' : 'Offline'}</span>
+                                </div>
                             </div>
-                            <div className="flex gap-1 ml-auto mt-2 sm:mt-0">
-                                <button className="btn btn-info" onClick={refreshSsidInfo}>
-                                    Refresh
+                            <div className="card-actions justify-end mt-4">
+                                <button className="btn btn-outline text-white hover:bg-primary" onClick={refreshSsidInfo} disabled={loading}>
+                                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/> Refresh
                                 </button>
-                                <label className="btn btn-error" onClick={() => openModal('reboot', 'Reboot', 'The router will restart after you confirm.')}>Reboot</label>     
+                                <button className="btn btn-error text-white" onClick={() => openModal('reboot', 'Reboot', 'The router will restart. This may take a few minutes.')} disabled={loading}>
+                                    <Power size={16}/> Reboot Router
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="card bg-base-100 w-full shrink-0 shadow-2xl mb-4">
-                    <Form ssid={ssidInfo!.ssid} selectedSsid={selectedSSID} syncedSsids={syncedSsids} refreshSsidInfo={refreshSsidInfo}/>            
-                </div>
-                <div className="card bg-base-100 w-full shrink-0 shadow-2xl">
-                    <div className="card-body">
-                        <h1 className="card-title">Associated Devices</h1>
-                        <div className="overflow-x-auto">
-                            <table className="table w-full">
-                                <thead>
-                                    <tr>
-                                        <th>IP Address</th>
-                                        <th>MAC Address</th>
-                                        <th>Host Name</th>
-                                        <th>Signal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(syncedSsids.length > 0 ? ssidInfo.ssid.filter(v => allowSsid.includes(v.id)) : [ssidInfo.ssid.find(v => v.id == selectedSSID) || ssidInfo.ssid[0]]).flatMap(v => v.associatedDevices).map((v, i) => (
-                                        <tr key={i}>
-                                            <td>{v.ip || "Not Available"}</td>
-                                            <td>{v.mac || "Not Available"}</td>
-                                            <td>{v.hostName || "Not Available"}</td>
-                                            <td>{v.signal || "Not Available"}</td>
+
+                    {/* SSID Management Card */}
+                    <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
+                        <div className="card-body">
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4">
+                                <h2 className="card-title text-white mb-2 sm:mb-0"><Wifi className="mr-2"/>SSID Management</h2>
+                                <div className="flex items-center gap-4">
+                                    <div className="form-control">
+                                        <label className="label cursor-pointer gap-2">
+                                            <span className="label-text text-gray-300">Sync SSID</span>
+                                            <input
+                                                type="checkbox"
+                                                className="toggle toggle-primary"
+                                                checked={syncedSsids.length > 0}
+                                                onChange={(e) => setSyncedSsids(e.target.checked ? allowSsid : [])}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div className="dropdown dropdown-bottom dropdown-end">
+                                        <div tabIndex={0} role="button" className={`btn btn-outline text-white ${syncedSsids.length > 0 ? 'btn-disabled' : ''}`}>
+                                            {ssidInfo.ssid.find(v => v.id == selectedSSID)?.name || ssidInfo.ssid[0].name}
+                                            <ChevronDown size={16}/>
+                                        </div>
+                                        <ul tabIndex={0} className="dropdown-content menu bg-base-200 rounded-box z-[1] w-52 p-2 shadow">
+                                            {ssidInfo.ssid.map((v, i) => (
+                                                <li key={i} onClick={() => setSelectedSSID(v.id)}>
+                                                    <button>{v.name}</button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <Form ssid={ssidInfo!.ssid} selectedSsid={selectedSSID} syncedSsids={syncedSsids} refreshSsidInfo={refreshSsidInfo}/>
+                        </div>
+                    </div>
+
+                    {/* Associated Devices Card */}
+                    <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
+                        <div className="card-body">
+                            <h1 className="card-title text-white">Associated Devices</h1>
+                            <div className="overflow-x-auto">
+                                <table className="table w-full">
+                                    <thead className="text-white/80">
+                                        <tr>
+                                            <th className="bg-transparent">IP Address</th>
+                                            <th className="bg-transparent">MAC Address</th>
+                                            <th className="bg-transparent">Host Name</th>
+                                            <th className="bg-transparent">Signal</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {(syncedSsids.length > 0 ? ssidInfo.ssid.filter(v => allowSsid.includes(v.id)) : [ssidInfo.ssid.find(v => v.id == selectedSSID) || ssidInfo.ssid[0]]).flatMap(v => v.associatedDevices).map((v, i) => (
+                                            <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                                                <td>{v.ip || "N/A"}</td>
+                                                <td>{v.mac || "N/A"}</td>
+                                                <td>{v.hostName || "N/A"}</td>
+                                                <td>{v.signal || "N/A"}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -7,8 +7,8 @@ import { signOut } from "next-auth/react";
 
 import Form from "./client.form";
 import CustomerView from "./customer.view";
-import ChartsView from "./charts.view";
-import { Wifi, Power, RefreshCw, LogOut, ChevronDown, Check, X, BarChart2 } from 'lucide-react';
+import SignalStrengthIcon from "./SignalStrengthIcon";
+import { Wifi, Power, RefreshCw, LogOut, ChevronDown, Check, X, Users } from 'lucide-react';
 
 const allowSsid = ["1", "5"];
 
@@ -23,7 +23,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
     useEffect(() => {
         const intervalId = setInterval(() => {
             refreshSsidInfo();
-        }, 30000); // Refresh every 30 seconds
+        }, 300000); // Refresh every 5 minutes
 
         return () => clearInterval(intervalId); // Cleanup on component unmount
     }, []);
@@ -177,11 +177,37 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
                         </div>
                     </div>
 
-                    {/* Associated Devices Chart Card */}
+                    {/* Associated Devices Table Card */}
                     <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
                         <div className="card-body">
-                            <h1 className="card-title text-white flex items-center"><BarChart2 className="mr-2"/>Associated Devices Signal Strength</h1>
-                            <ChartsView ssidInfo={ssidInfo} />
+                            <h1 className="card-title text-white flex items-center"><Users className="mr-2"/>Associated Devices</h1>
+                            <div className="overflow-x-auto">
+                                <table className="table w-full">
+                                    <thead className="text-white/80">
+                                        <tr>
+                                            <th className="bg-transparent">Host Name</th>
+                                            <th className="bg-transparent">IP Address</th>
+                                            <th className="bg-transparent">MAC Address</th>
+                                            <th className="bg-transparent">Signal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(syncedSsids.length > 0 ? ssidInfo.ssid.filter(v => allowSsid.includes(v.id)) : [ssidInfo.ssid.find(v => v.id == selectedSSID) || ssidInfo.ssid[0]]).flatMap(v => v.associatedDevices).map((device, i) => (
+                                            <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                                                <td>{device.hostName || "N/A"}</td>
+                                                <td>{device.ip || "N/A"}</td>
+                                                <td>{device.mac || "N/A"}</td>
+                                                <td>
+                                                    <div className="flex items-center gap-2">
+                                                        <SignalStrengthIcon signalDbm={device.signal ? parseInt(device.signal.replace(' dBm', '')) : null} />
+                                                        <span>{device.signal || "N/A"}</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

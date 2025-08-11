@@ -27,6 +27,8 @@ interface CustomerInfo {
     packageName: string;
     monthlyBill: number;
     dueDate: string;
+    paymentStatus: string;
+    address: string;
 }
 
 const allowSsid = ["1", "5"];

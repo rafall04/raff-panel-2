@@ -3,11 +3,15 @@
 import type { SSIDInfo } from "./actions";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-import { TooltipProps } from 'recharts';
-import { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
+// Define a specific interface for the tooltip props
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: { value: number }[];
+    label?: string;
+}
 
-// Custom Tooltip for better styling
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+// Custom Tooltip for better styling, now with a correct and specific type
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         return (
             <div className="p-2 bg-black/50 backdrop-blur-sm border border-white/20 rounded-md text-white">

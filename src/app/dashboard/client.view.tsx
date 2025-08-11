@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import type { SSIDInfo } from "./actions";
+import type { SSIDInfo, CustomerInfo } from "./actions";
 import { getSSIDInfo, rebootRouter, refreshObject } from "./actions";
 
 import Form from "./client.form";
 import { signOut } from "next-auth/react";
+import CustomerView from "./customer.view";
 const allowSsid = ["1", "5"];
 
-export default function View({ ssidInfo: initialSsidInfo }: { ssidInfo: SSIDInfo }) {
+export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
     const [selectedSSID, setSelectedSSID] = useState<string>(ssidInfo.ssid[0].id);
     const [syncedSsids, setSyncedSsids] = useState<string[]>(allowSsid);
@@ -85,6 +86,7 @@ export default function View({ ssidInfo: initialSsidInfo }: { ssidInfo: SSIDInfo
                 </div>
             </div>
             <div className="container mx-auto pt-8 pb-4 px-6">
+                <CustomerView customerInfo={customerInfo} />
                 <div className="flex flex-col sm:flex-row w-full sm:justify-between mb-1 sm:items-center">
                     <div className="form-control">
                         <label className="label cursor-pointer">

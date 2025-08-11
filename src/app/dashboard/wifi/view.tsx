@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { SSIDInfo } from "../../actions";
-import Form from "../../client.form"; // Re-using the existing form component
+import type { SSIDInfo } from "../actions";
+import Form from "../client.form"; // Re-using the existing form component
 import { Wifi, ChevronDown } from 'lucide-react';
 
 const allowSsid = ["1", "5"];

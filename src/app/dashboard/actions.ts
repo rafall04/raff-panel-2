@@ -190,27 +190,27 @@ export async function submitReport(prevState: { message: string, success: boolea
       return { message: 'Authentication required.', success: false };
     }
 
+    const customerInfo = await getCustomerInfo();
+    if (!customerInfo) {
+        return { message: 'Could not retrieve customer data for the report.', success: false };
+    }
+
     const report = {
-      category: formData.get('category'),
-      description: formData.get('description'),
-      userId: session.user.id, // Include user identifier
+      phoneNumber: session.user.id,
+      name: customerInfo.name,
+      reportText: `${formData.get('category')}: ${formData.get('description')}`
     };
 
-    console.log('Submitting report:', report);
-
     try {
-      // TODO: Replace with actual fetch call when the API is ready
-      // const response = await fetch(`${process.env.API_URL}/api/reports`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(report),
-      // });
-      // if (!response.ok) {
-      //   throw new Error('Failed to submit report.');
-      // }
+      const response = await fetch(`${process.env.API_URL}/api/lapor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(report),
+      });
 
-      // Simulate a successful API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        throw new Error('Failed to submit report.');
+      }
 
       revalidatePath('/dashboard');
       return { message: 'Report submitted successfully!', success: true };

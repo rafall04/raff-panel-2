@@ -2,13 +2,11 @@
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { requestOtp } from '@/utils/auth.server';
-import { useRouter } from 'next/navigation';
 import 'react-phone-number-input/style.css'
 import PhoneInput from 'react-phone-number-input'
 import { Phone, KeyRound, ArrowRight } from 'lucide-react'; // Import icons
 
 export default function Login() {
-    const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
     const [otp, setOtp] = useState('');
     const [otpRequested, setOtpRequested] = useState(false);

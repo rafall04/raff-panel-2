@@ -33,16 +33,17 @@ export default function Login() {
         setLoading(true);
         setAlertMessage('');
         const result = await signIn('credentials', {
-            redirect: false, // Set to false to handle redirect manually
+            callbackUrl: '/dashboard',
+            redirect: true,
             phoneNumber: phoneNumber!.slice(1),
             otp,
         });
+
+        // This code now only runs if the redirect fails, i.e., an error occurred.
         if (result?.error) {
-            setAlertMessage('Invalid OTP or failed to sign in');
-        } else if (result?.ok) {
-            router.push('/dashboard');
+            setAlertMessage('Invalid OTP or failed to sign in. Please try again.');
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (

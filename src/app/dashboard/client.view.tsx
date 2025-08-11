@@ -3,38 +3,35 @@
 import { useState, useEffect } from "react";
 import type { SSIDInfo, CustomerInfo } from "./actions";
 import { getSSIDInfo, rebootRouter, refreshObject } from "./actions";
-import { signOut } from "next-auth/react";
 
-import Form from "./client.form";
 import CustomerView from "./customer.view";
 import SignalStrengthIcon from "./SignalStrengthIcon";
-import ReportForm from "./report.form";
-import { Wifi, Power, RefreshCw, LogOut, ChevronDown, Check, X, Users, MessageSquareWarning } from 'lucide-react';
-
-const allowSsid = ["1", "5"];
+import { Power, RefreshCw, Check, X, Users } from 'lucide-react';
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
-    const [selectedSSID, setSelectedSSID] = useState<string>(ssidInfo.ssid[0].id);
-    const [syncedSsids, setSyncedSsids] = useState<string[]>(allowSsid);
     const [loading, setLoading] = useState<boolean>(false);
-    const [isReportModalOpen, setReportModalOpen] = useState(false);
     const [modalState, setModalState] = useState<{ action: 'reboot' | 'logout', description: string, text: string } | null>(null);
 
     // Effect for real-time data refresh
     useEffect(() => {
         const intervalId = setInterval(() => {
-            refreshSsidInfo();
+            // Only refresh if not already loading
+            if (!loading) {
+                refreshSsidInfo();
+            }
         }, 300000); // Refresh every 5 minutes
 
         return () => clearInterval(intervalId); // Cleanup on component unmount
-    }, []);
+    }, [loading]); // Add loading to dependency array
 
     const refreshSsidInfo = async () => {
         setLoading(true);
         await refreshObject();
         const newSsidInfo = await getSSIDInfo();
-        setSSIDInfo(newSsidInfo!);
+        if (newSsidInfo) {
+            setSSIDInfo(newSsidInfo);
+        }
         setLoading(false);
     };
 
@@ -50,13 +47,6 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
         }
     };
 
-    const handleLogout = () => {
-        signOut({
-            redirect: true,
-            callbackUrl: "/login"
-        });
-    };
-
     const openModal = (action: 'reboot' | 'logout', description: string, text: string) => {
         setModalState({ action, description, text });
         (document.getElementById("confirmation_modal") as HTMLDialogElement)?.showModal();
@@ -65,9 +55,8 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
     const confirmModalAction = () => {
         if (modalState?.action === 'reboot') {
             handleReboot();
-        } else if (modalState?.action === 'logout') {
-            handleLogout();
         }
+        // Logout is now handled by the layout, but we keep the reboot logic
         setModalState(null);
         (document.getElementById("confirmation_modal") as HTMLDialogElement)?.close();
     };
@@ -98,135 +87,68 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
                 </div>
             </dialog>
 
-            <dialog id="report_modal" className="modal" open={isReportModalOpen}>
-                <div className="modal-box bg-white/10 backdrop-blur-lg border border-white/20">
-                    <h3 className="font-bold text-lg text-white flex items-center"><MessageSquareWarning className="mr-2"/>Report an Issue</h3>
-                    <div className="py-4">
-                        <ReportForm />
-                    </div>
-                    <div className="modal-action">
-                        <button className="btn" onClick={() => setReportModalOpen(false)}>Close</button>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                {/* Customer Info Card */}
+                <div className="xl:col-span-1">
+                    <CustomerView customerInfo={customerInfo} />
                 </div>
-            </dialog>
 
-            <div className="navbar bg-base-100/5 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
-                <div className="navbar-start">
-                    <a className="btn btn-ghost text-xl text-white">RAF PANEL</a>
-                </div>
-                <div className="navbar-end gap-2">
-                    <button className="btn btn-ghost text-white" onClick={() => setReportModalOpen(true)}>
-                        <MessageSquareWarning size={20}/>
-                        Lapor Masalah
-                    </button>
-                    <div className="h-6 w-px bg-white/20"></div>
-                    <button className="btn btn-ghost text-white" onClick={() => openModal('logout', 'Logout', 'You will be logged out.')}>
-                        <LogOut size={20}/>
-                        Logout
-                    </button>
-                </div>
-            </div>
-
-            <div className="container mx-auto p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
-                    {/* Customer Info Card */}
-                    <div className="xl:col-span-1">
-                        <CustomerView customerInfo={customerInfo} />
-                    </div>
-
-                    {/* Status Card */}
-                    <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl xl:col-span-2">
-                        <div className="card-body">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h2 className="card-title text-white">Device Status</h2>
-                                    <p className="text-sm text-gray-400">Uptime: {ssidInfo.uptime || "Not Available"}</p>
-                                    <p className="text-sm text-gray-400">Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
-                                    <span className="text-white">{isOnline ? 'Online' : 'Offline'}</span>
-                                </div>
+                {/* Status Card */}
+                <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl xl:col-span-2">
+                    <div className="card-body">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h2 className="card-title text-white">Device Status</h2>
+                                <p className="text-sm text-gray-400">Uptime: {ssidInfo.uptime || "Not Available"}</p>
+                                <p className="text-sm text-gray-400">Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</p>
                             </div>
-                            <div className="card-actions justify-end mt-4">
-                                <button className="btn btn-outline text-white hover:bg-primary" onClick={refreshSsidInfo} disabled={loading}>
-                                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/> Refresh
-                                </button>
-                                <button className="btn btn-error text-white" onClick={() => openModal('reboot', 'Reboot', 'The router will restart. This may take a few minutes.')} disabled={loading}>
-                                    <Power size={16}/> Reboot Router
-                                </button>
+                            <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
+                                <span className="text-white">{isOnline ? 'Online' : 'Offline'}</span>
                             </div>
                         </div>
-                    </div>
-
-                    {/* SSID Management Card */}
-                    <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
-                        <div className="card-body">
-                            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4">
-                                <h2 className="card-title text-white mb-2 sm:mb-0"><Wifi className="mr-2"/>SSID Management</h2>
-                                <div className="flex items-center gap-4">
-                                    <div className="form-control">
-                                        <label className="label cursor-pointer gap-2">
-                                            <span className="label-text text-gray-300">Sync SSID</span>
-                                            <input
-                                                type="checkbox"
-                                                className="toggle toggle-primary"
-                                                checked={syncedSsids.length > 0}
-                                                onChange={(e) => setSyncedSsids(e.target.checked ? allowSsid : [])}
-                                            />
-                                        </label>
-                                    </div>
-                                    <div className="dropdown dropdown-bottom dropdown-end">
-                                        <div tabIndex={0} role="button" className={`btn btn-outline text-white ${syncedSsids.length > 0 ? 'btn-disabled' : ''}`}>
-                                            {ssidInfo.ssid.find(v => v.id == selectedSSID)?.name || ssidInfo.ssid[0].name}
-                                            <ChevronDown size={16}/>
-                                        </div>
-                                        <ul tabIndex={0} className="dropdown-content menu bg-base-200 rounded-box z-[1] w-52 p-2 shadow">
-                                            {ssidInfo.ssid.map((v, i) => (
-                                                <li key={i} onClick={() => setSelectedSSID(v.id)}>
-                                                    <button>{v.name}</button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            <Form ssid={ssidInfo!.ssid} selectedSsid={selectedSSID} syncedSsids={syncedSsids} refreshSsidInfo={refreshSsidInfo}/>
+                        <div className="card-actions justify-end mt-4">
+                            <button className="btn btn-outline text-white hover:bg-primary" onClick={refreshSsidInfo} disabled={loading}>
+                                <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/> Refresh
+                            </button>
+                            <button className="btn btn-error text-white" onClick={() => openModal('reboot', 'Reboot', 'The router will restart. This may take a few minutes.')} disabled={loading}>
+                                <Power size={16}/> Reboot Router
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    {/* Associated Devices Table Card */}
-                    <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
-                        <div className="card-body">
-                            <h1 className="card-title text-white flex items-center"><Users className="mr-2"/>Associated Devices</h1>
-                            <div className="overflow-x-auto">
-                                <table className="table w-full">
-                                    <thead className="text-white/80">
-                                        <tr>
-                                            <th className="bg-transparent">Host Name</th>
-                                            <th className="bg-transparent">IP Address</th>
-                                            <th className="bg-transparent">MAC Address</th>
-                                            <th className="bg-transparent">Signal</th>
+                {/* Associated Devices Table Card */}
+                <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
+                    <div className="card-body">
+                        <h1 className="card-title text-white flex items-center"><Users className="mr-2"/>Associated Devices</h1>
+                        <div className="overflow-x-auto">
+                            <table className="table w-full">
+                                <thead className="text-white/80">
+                                    <tr>
+                                        <th className="bg-transparent">Host Name</th>
+                                        <th className="bg-transparent">IP Address</th>
+                                        <th className="bg-transparent">MAC Address</th>
+                                        <th className="bg-transparent">Signal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {ssidInfo.ssid.flatMap(s => s.associatedDevices).map((device, i) => (
+                                        <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                                            <td>{device.hostName || "N/A"}</td>
+                                            <td>{device.ip || "N/A"}</td>
+                                            <td>{device.mac || "N/A"}</td>
+                                            <td>
+                                                <div className="flex items-center gap-2">
+                                                    <SignalStrengthIcon signalDbm={device.signal ? parseInt(device.signal.replace(' dBm', '')) : null} />
+                                                    <span>{device.signal || "N/A"}</span>
+                                                </div>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {(syncedSsids.length > 0 ? ssidInfo.ssid.filter(v => allowSsid.includes(v.id)) : [ssidInfo.ssid.find(v => v.id == selectedSSID) || ssidInfo.ssid[0]]).flatMap(v => v.associatedDevices).map((device, i) => (
-                                            <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                                                <td>{device.hostName || "N/A"}</td>
-                                                <td>{device.ip || "N/A"}</td>
-                                                <td>{device.mac || "N/A"}</td>
-                                                <td>
-                                                    <div className="flex items-center gap-2">
-                                                        <SignalStrengthIcon signalDbm={device.signal ? parseInt(device.signal.replace(' dBm', '')) : null} />
-                                                        <span>{device.signal || "N/A"}</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

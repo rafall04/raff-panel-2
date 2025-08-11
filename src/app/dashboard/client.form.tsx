@@ -2,13 +2,14 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { setPassword, setSSIDName } from "./actions";
-import { Lock, Type, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, Type, Save, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function Form({ ssid, selectedSsid, syncedSsids, refreshSsidInfo }: {ssid: {id: string, name: string }[], selectedSsid: string, syncedSsids: string[], refreshSsidInfo: () => void}) {
     const [form, setForm] = useState({
         ssid: ssid.find(v => v.id == selectedSsid)?.name || ssid[0].name,
         password: ''
     });
+    const [showPassword, setShowPassword] = useState(false);
     const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -85,7 +86,20 @@ export default function Form({ ssid, selectedSsid, syncedSsids, refreshSsidInfo 
                     </label>
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input type="password" placeholder="Leave blank to keep current" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30 focus:border-primary"/>
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Leave blank to keep current"
+                            value={form.password}
+                            onChange={(e) => setForm({ ...form, password: e.target.value })}
+                            className="input input-bordered w-full pl-10 pr-10 text-white bg-black/20 focus:bg-black/30 focus:border-primary"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
                     </div>
                 </div>
             </div>

@@ -198,7 +198,8 @@ export async function submitReport(prevState: { message: string, success: boolea
     const report = {
       phoneNumber: session.user.id,
       name: customerInfo.name,
-      reportText: `${formData.get('category')}: ${formData.get('description')}`
+      category: formData.get('category'),
+      reportText: formData.get('description')
     };
 
     try {

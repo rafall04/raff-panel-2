@@ -1,6 +1,7 @@
 "use server";
 
 import { getAuthSession } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 
 interface AssociatedDevice {
     ip: string | null;
@@ -180,6 +181,42 @@ const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
     } catch (error) {
         console.error("Failed to fetch customer info:", error);
         return null;
+    }
+}
+
+export async function submitReport(prevState: { message: string, success: boolean }, formData: FormData) {
+    const session = await getAuthSession();
+    if (!session?.user?.id) {
+      return { message: 'Authentication required.', success: false };
+    }
+
+    const report = {
+      category: formData.get('category'),
+      description: formData.get('description'),
+      userId: session.user.id, // Include user identifier
+    };
+
+    console.log('Submitting report:', report);
+
+    try {
+      // TODO: Replace with actual fetch call when the API is ready
+      // const response = await fetch(`${process.env.API_URL}/api/reports`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(report),
+      // });
+      // if (!response.ok) {
+      //   throw new Error('Failed to submit report.');
+      // }
+
+      // Simulate a successful API call for now
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      revalidatePath('/dashboard');
+      return { message: 'Report submitted successfully!', success: true };
+    } catch (error) {
+      console.error(error);
+      return { message: 'Failed to submit report.', success: false };
     }
 }
 

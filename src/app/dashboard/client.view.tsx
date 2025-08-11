@@ -8,7 +8,8 @@ import { signOut } from "next-auth/react";
 import Form from "./client.form";
 import CustomerView from "./customer.view";
 import SignalStrengthIcon from "./SignalStrengthIcon";
-import { Wifi, Power, RefreshCw, LogOut, ChevronDown, Check, X, Users } from 'lucide-react';
+import ReportForm from "./report.form";
+import { Wifi, Power, RefreshCw, LogOut, ChevronDown, Check, X, Users, MessageSquareWarning } from 'lucide-react';
 
 const allowSsid = ["1", "5"];
 
@@ -17,6 +18,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
     const [selectedSSID, setSelectedSSID] = useState<string>(ssidInfo.ssid[0].id);
     const [syncedSsids, setSyncedSsids] = useState<string[]>(allowSsid);
     const [loading, setLoading] = useState<boolean>(false);
+    const [isReportModalOpen, setReportModalOpen] = useState(false);
     const [modalState, setModalState] = useState<{ action: 'reboot' | 'logout', description: string, text: string } | null>(null);
 
     // Effect for real-time data refresh
@@ -96,11 +98,28 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
                 </div>
             </dialog>
 
+            <dialog id="report_modal" className="modal" open={isReportModalOpen}>
+                <div className="modal-box bg-white/10 backdrop-blur-lg border border-white/20">
+                    <h3 className="font-bold text-lg text-white flex items-center"><MessageSquareWarning className="mr-2"/>Report an Issue</h3>
+                    <div className="py-4">
+                        <ReportForm />
+                    </div>
+                    <div className="modal-action">
+                        <button className="btn" onClick={() => setReportModalOpen(false)}>Close</button>
+                    </div>
+                </div>
+            </dialog>
+
             <div className="navbar bg-base-100/5 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
                 <div className="navbar-start">
                     <a className="btn btn-ghost text-xl text-white">RAF PANEL</a>
                 </div>
-                <div className="navbar-end">
+                <div className="navbar-end gap-2">
+                    <button className="btn btn-ghost text-white" onClick={() => setReportModalOpen(true)}>
+                        <MessageSquareWarning size={20}/>
+                        Lapor Masalah
+                    </button>
+                    <div className="h-6 w-px bg-white/20"></div>
                     <button className="btn btn-ghost text-white" onClick={() => openModal('logout', 'Logout', 'You will be logged out.')}>
                         <LogOut size={20}/>
                         Logout

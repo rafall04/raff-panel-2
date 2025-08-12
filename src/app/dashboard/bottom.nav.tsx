@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Wifi, MessageSquareWarning, Rocket, History, Settings } from 'lucide-react';
+import { LayoutDashboard, Wifi, Rocket, Settings } from 'lucide-react';
 
 export default function BottomNav() {
     const pathname = usePathname();

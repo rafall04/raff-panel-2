@@ -32,6 +32,31 @@ interface CustomerInfo {
     address: string;
 }
 
+export interface BoostPackage {
+    name: string;
+    price: string;
+    profile: string;
+    speedBoostPrices: {
+        "1_day": string;
+        "3_days": string;
+        "7_days": string;
+    };
+}
+
+export async function getBoostPackages(): Promise<BoostPackage[]> {
+    try {
+        const res = await fetch(`${process.env.API_URL}/api/speed-boost/packages`);
+        if (!res.ok) {
+            throw new Error('Failed to fetch boost packages');
+        }
+        const data = await res.json();
+        return data.data; // Based on user's provided JSON structure { "data": [...] }
+    } catch (error) {
+        console.error("Failed to fetch boost packages:", error);
+        return [];
+    }
+}
+
 const allowSsid = ["1", "5"];
 const rebootRouter = async () => {
     try {
@@ -227,4 +252,36 @@ export type {
     SSIDInfo,
     AssociatedDevice,
     CustomerInfo
+}
+
+export async function requestSpeedBoost(targetPackageName: string, duration: string) {
+    const session = await getAuthSession();
+    if (!session?.user?.id) {
+      return { message: 'Authentication required.', success: false };
+    }
+
+    const boostRequest = {
+        phoneNumber: session.user.id,
+        targetPackageName: targetPackageName,
+        duration: duration
+    };
+
+    try {
+        const response = await fetch(`${process.env.API_URL}/api/request-speed`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(boostRequest),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to request speed boost.' }));
+            return { message: errorData.message || 'An unknown error occurred.', success: false };
+        }
+
+        revalidatePath('/dashboard/speed-boost');
+        return { message: 'Speed boost requested successfully!', success: true };
+    } catch (error) {
+        console.error(error);
+        return { message: 'An internal error occurred.', success: false };
+    }
 }

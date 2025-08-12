@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Wifi, MessageSquareWarning } from 'lucide-react';
+import { LayoutDashboard, Wifi, MessageSquareWarning, Rocket } from 'lucide-react';
 
 // This is a placeholder for the modal trigger function that will be passed as a prop.
 type BottomNavProps = {
@@ -15,11 +15,12 @@ export default function BottomNav({ onReportClick }: BottomNavProps) {
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/dashboard/wifi', label: 'Wi-Fi', icon: Wifi },
+        { href: '/dashboard/speed-boost', label: 'Boost', icon: Rocket },
     ];
 
     return (
         <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white/10 backdrop-blur-lg border-t border-white/20">
-            <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+            <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (

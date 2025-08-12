@@ -56,7 +56,7 @@ export default function SpeedBoostView({
     return (
         <div>
             {notification && (
-                <div className="toast toast-top toast-center z-[999]">
+                <div className="toast toast-bottom toast-center z-[999]">
                     <div className={`alert ${notification.success ? 'alert-success' : 'alert-error'}`}>
                         <span>{notification.message}</span>
                     </div>

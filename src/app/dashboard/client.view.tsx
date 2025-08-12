@@ -6,9 +6,11 @@ import { getSSIDInfo, rebootRouter, refreshObject } from "./actions";
 
 import CustomerView from "./customer.view";
 import SignalStrengthIcon from "./SignalStrengthIcon";
+import StatusView from "./status.view";
 import { Power, RefreshCw, Check, X, Users } from 'lucide-react';
+import { DashboardStatus } from "../actions";
 
-export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null }) {
+export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
     const [loading, setLoading] = useState<boolean>(false);
     const [modalState, setModalState] = useState<{ action: 'reboot' | 'logout', description: string, text: string } | null>(null);
@@ -88,6 +90,8 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo }: { ssid
             </dialog>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                <StatusView status={dashboardStatus} />
 
                 {/* Customer Info Card */}
                 <div className="xl:col-span-1">

@@ -45,14 +45,14 @@ interface CustomerInfo {
     address: string;
 }
 
-export interface ReportHistoryItem {
+interface ReportHistoryItem {
     id: string;
     category: string;
     status: 'Submitted' | 'In Progress' | 'Resolved';
     submittedAt: string;
 }
 
-export interface DashboardStatus {
+interface DashboardStatus {
     activeBoost: {
         profile: string;
         expiresAt: string;
@@ -64,7 +64,7 @@ export interface DashboardStatus {
     } | null;
 }
 
-export interface BoostPackage {
+interface BoostPackage {
     name: string;
     price: string;
     profile: string;
@@ -137,7 +137,6 @@ const refreshObject = async() => {
 const getSSIDInfo = async (): Promise<SSIDInfo | null> => {
     try {
         const session = await getAuthSession();
-        // This fetch call targets GENIEACS_URL, not API_URL, so it does not need the JWT.
         const res = await fetch(process.env.GENIEACS_URL + "/devices/?query=" + encodeURIComponent(JSON.stringify({ _id: session!.user.deviceId })));
         if (!res.ok) {
             throw new Error(`Error fetching data: ${res.statusText}`);
@@ -271,22 +270,14 @@ export async function submitReport(prevState: { message: string, success: boolea
     }
 }
 
-export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo };
-export type {
-    SSID,
-    SSIDInfo,
-    AssociatedDevice,
-    CustomerInfo,
-    BoostPackage,
-    ReportHistoryItem,
-    DashboardStatus
-}
-
 export async function getDashboardStatus(): Promise<DashboardStatus> {
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${process.env.API_URL}/api/dashboard-status`, { headers });
-        if (!res.ok) throw new Error('Failed to fetch dashboard status');
+        if (!res.ok) {
+            console.error(`Error fetching dashboard status: ${res.status} ${res.statusText}`);
+            throw new Error('Failed to fetch dashboard status');
+        }
         return await res.json();
     } catch (error) {
         console.error("Failed to fetch dashboard status:", error);
@@ -298,7 +289,10 @@ export async function getReportHistory(): Promise<ReportHistoryItem[]> {
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${process.env.API_URL}/api/reports/history`, { headers });
-        if (!res.ok) throw new Error('Failed to fetch report history');
+        if (!res.ok) {
+            console.error(`Error fetching report history: ${res.status} ${res.statusText}`);
+            throw new Error('Failed to fetch report history');
+        }
         return await res.json();
     } catch (error) {
         console.error("Failed to fetch report history:", error);
@@ -337,4 +331,15 @@ export async function requestSpeedBoost(targetPackageName: string, duration: str
         console.error(error);
         return { message: 'An internal error occurred.', success: false };
     }
+}
+
+export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo };
+export type {
+    SSID,
+    SSIDInfo,
+    AssociatedDevice,
+    CustomerInfo,
+    BoostPackage,
+    ReportHistoryItem,
+    DashboardStatus
 }

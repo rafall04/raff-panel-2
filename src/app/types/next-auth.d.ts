@@ -8,18 +8,21 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     deviceId: string;
+    backendToken: string;
   }
 }
 
 declare module "next-auth" {
   interface User extends User {
     deviceId: string;
+    backendToken: string;
   }
   
   interface Session {
     user: User & {
       id: string;
       deviceId: string;
+      backendToken: string;
     };
   }
 }

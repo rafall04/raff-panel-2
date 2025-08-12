@@ -32,6 +32,25 @@ interface CustomerInfo {
     address: string;
 }
 
+export interface ReportHistoryItem {
+    id: string;
+    category: string;
+    status: 'Submitted' | 'In Progress' | 'Resolved';
+    submittedAt: string;
+}
+
+export interface DashboardStatus {
+    activeBoost: {
+        profile: string;
+        expiresAt: string;
+    } | null;
+    activeReport: {
+        id: string;
+        category: string;
+        status: 'Submitted' | 'In Progress';
+    } | null;
+}
+
 export interface BoostPackage {
     name: string;
     price: string;
@@ -251,7 +270,37 @@ export type {
     SSID,
     SSIDInfo,
     AssociatedDevice,
-    CustomerInfo
+    CustomerInfo,
+    BoostPackage,
+    ReportHistoryItem,
+    DashboardStatus
+}
+
+export async function getDashboardStatus(): Promise<DashboardStatus> {
+    // Placeholder: Replace with actual API call to GET /api/dashboard-status
+    console.log("Fetching dashboard status (placeholder)...");
+    // Simulate a mix of states for testing
+    return {
+        activeBoost: {
+            profile: '12Mbps',
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+        activeReport: {
+            id: 'report-123',
+            category: 'Slow Connection',
+            status: 'In Progress',
+        }
+    };
+}
+
+export async function getReportHistory(): Promise<ReportHistoryItem[]> {
+    // Placeholder: Replace with actual API call to GET /api/reports/history
+    console.log("Fetching report history (placeholder)...");
+    return [
+        { id: 'RPT-001', category: 'Slow Connection', status: 'Resolved', submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 'RPT-002', category: 'No Connection', status: 'Resolved', submittedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 'RPT-003', category: 'Other', status: 'Submitted', submittedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+    ];
 }
 
 export async function requestSpeedBoost(targetPackageName: string, duration: string) {

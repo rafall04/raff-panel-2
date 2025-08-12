@@ -1,66 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { SSIDInfo, CustomerInfo } from "./actions";
-import { getSSIDInfo, rebootRouter, refreshObject } from "./actions";
+import type { SSIDInfo, CustomerInfo, DashboardStatus } from "./actions";
+import { getSSIDInfo, refreshObject } from "./actions";
 
 import CustomerView from "./customer.view";
 import SignalStrengthIcon from "./SignalStrengthIcon";
 import StatusView from "./status.view";
-import { Power, RefreshCw, Check, X, Users } from 'lucide-react';
-import { DashboardStatus } from "./actions";
+import { RefreshCw, Users } from 'lucide-react';
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
     const [loading, setLoading] = useState<boolean>(false);
-    const [modalState, setModalState] = useState<{ action: 'reboot' | 'logout', description: string, text: string } | null>(null);
 
     // Effect for real-time data refresh
     useEffect(() => {
         const intervalId = setInterval(() => {
-            // Only refresh if not already loading
             if (!loading) {
                 refreshSsidInfo();
             }
         }, 300000); // Refresh every 5 minutes
 
-        return () => clearInterval(intervalId); // Cleanup on component unmount
-    }, [loading]); // Add loading to dependency array
+        return () => clearInterval(intervalId);
+    }, [loading]);
 
     const refreshSsidInfo = async () => {
         setLoading(true);
-        await refreshObject();
-        const newSsidInfo = await getSSIDInfo();
-        if (newSsidInfo) {
-            setSSIDInfo(newSsidInfo);
-        }
-        setLoading(false);
-    };
-
-    const handleReboot = async () => {
-        setLoading(true);
         try {
-            await rebootRouter();
+            await refreshObject();
+            const newSsidInfo = await getSSIDInfo();
+            if (newSsidInfo) {
+                setSSIDInfo(newSsidInfo);
+            }
         } catch (error) {
-            console.error(error);
+            console.error("Failed to refresh SSID info:", error);
         } finally {
-            await refreshSsidInfo();
             setLoading(false);
         }
-    };
-
-    const openModal = (action: 'reboot' | 'logout', description: string, text: string) => {
-        setModalState({ action, description, text });
-        (document.getElementById("confirmation_modal") as HTMLDialogElement)?.showModal();
-    };
-
-    const confirmModalAction = () => {
-        if (modalState?.action === 'reboot') {
-            handleReboot();
-        }
-        // Logout is now handled by the layout, but we keep the reboot logic
-        setModalState(null);
-        (document.getElementById("confirmation_modal") as HTMLDialogElement)?.close();
     };
 
     const isOnline = new Date(ssidInfo.lastInform).getTime() > (new Date().getTime() - 86700000);
@@ -75,19 +51,6 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                     </div>
                 </div>
             )}
-
-            <dialog id="confirmation_modal" className="modal">
-                <div className="modal-box bg-white/10 backdrop-blur-lg border border-white/20">
-                    <h3 className="font-bold text-lg">Are You Sure?</h3>
-                    <p className="py-4">{modalState?.text}</p>
-                    <div className="modal-action">
-                        <button onClick={confirmModalAction} className="btn btn-error"><Check className="mr-2"/>Confirm</button>
-                        <form method="dialog">
-                            <button className="btn"><X className="mr-2"/>Cancel</button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
@@ -115,9 +78,6 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                         <div className="card-actions justify-end mt-4">
                             <button className="btn btn-outline text-white hover:bg-primary" onClick={refreshSsidInfo} disabled={loading}>
                                 <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/> Refresh
-                            </button>
-                            <button className="btn btn-error text-white" onClick={() => openModal('reboot', 'Reboot', 'The router will restart. This may take a few minutes.')} disabled={loading}>
-                                <Power size={16}/> Reboot Router
                             </button>
                         </div>
                     </div>

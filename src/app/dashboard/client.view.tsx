@@ -8,7 +8,7 @@ import CustomerView from "./customer.view";
 import SignalStrengthIcon from "./SignalStrengthIcon";
 import StatusView from "./status.view";
 import { Power, RefreshCw, Check, X, Users } from 'lucide-react';
-import { DashboardStatus } from "../actions";
+import { DashboardStatus } from "./actions";
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);

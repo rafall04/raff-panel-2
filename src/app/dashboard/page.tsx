@@ -1,4 +1,4 @@
-import { getSSIDInfo, getCustomerInfo, getDashboardStatus } from "../actions";
+import { getSSIDInfo, getCustomerInfo, getDashboardStatus } from "./actions";
 import ClientView from "./client.view";
 export const dynamic = 'force-dynamic'
 export default async function Page() {

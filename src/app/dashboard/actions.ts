@@ -3,6 +3,19 @@
 import { getAuthSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+// Helper to get auth headers
+async function getAuthHeaders() {
+    const session = await getAuthSession();
+    const token = session?.user?.backendToken;
+    if (!token) {
+        throw new Error("User not authenticated or token not found");
+    }
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+}
+
 interface AssociatedDevice {
     ip: string | null;
     mac: string | null;
@@ -64,12 +77,13 @@ export interface BoostPackage {
 
 export async function getBoostPackages(): Promise<BoostPackage[]> {
     try {
-        const res = await fetch(`${process.env.API_URL}/api/speed-boost/packages`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.API_URL}/api/speed-boost/packages`, { headers });
         if (!res.ok) {
             throw new Error('Failed to fetch boost packages');
         }
         const data = await res.json();
-        return data.data; // Based on user's provided JSON structure { "data": [...] }
+        return data.data;
     } catch (error) {
         console.error("Failed to fetch boost packages:", error);
         return [];
@@ -123,6 +137,7 @@ const refreshObject = async() => {
 const getSSIDInfo = async (): Promise<SSIDInfo | null> => {
     try {
         const session = await getAuthSession();
+        // This fetch call targets GENIEACS_URL, not API_URL, so it does not need the JWT.
         const res = await fetch(process.env.GENIEACS_URL + "/devices/?query=" + encodeURIComponent(JSON.stringify({ _id: session!.user.deviceId })));
         if (!res.ok) {
             throw new Error(`Error fetching data: ${res.statusText}`);
@@ -208,19 +223,13 @@ const setSSIDName = async (id: string, newName: string) => {
 
 const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
     try {
-        const session = await getAuthSession();
-        if (!session?.user?.id) {
-            // This case should ideally not happen if the page is protected
-            return null;
-        }
-        const res = await fetch(`${process.env.API_URL}/api/user/${session.user.id}`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.API_URL}/api/user/${(await getAuthSession())!.user.id}`, { headers });
         if (!res.ok) {
             console.error(`Error fetching customer data: ${res.status} ${res.statusText}`);
             return null;
         }
         const data = await res.json();
-        // Assuming the API returns data that matches the CustomerInfo interface.
-        // If the data is nested, e.g., { user: {...} }, this needs to be data.user
         return data as CustomerInfo;
     } catch (error) {
         console.error("Failed to fetch customer info:", error);
@@ -229,39 +238,36 @@ const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
 }
 
 export async function submitReport(prevState: { message: string, success: boolean }, formData: FormData) {
-    const session = await getAuthSession();
-    if (!session?.user?.id) {
-      return { message: 'Authentication required.', success: false };
-    }
-
-    const customerInfo = await getCustomerInfo();
-    if (!customerInfo) {
-        return { message: 'Could not retrieve customer data for the report.', success: false };
-    }
-
-    const report = {
-      phoneNumber: session.user.id,
-      name: customerInfo.name,
-      category: formData.get('category'),
-      reportText: formData.get('description')
-    };
-
     try {
-      const response = await fetch(`${process.env.API_URL}/api/lapor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-      });
+        const session = await getAuthSession();
+        const customerInfo = await getCustomerInfo();
+        if (!session?.user?.id || !customerInfo) {
+          return { message: 'Authentication or customer data missing.', success: false };
+        }
 
-      if (!response.ok) {
-        throw new Error('Failed to submit report.');
-      }
+        const report = {
+          phoneNumber: session.user.id,
+          name: customerInfo.name,
+          category: formData.get('category'),
+          reportText: formData.get('description')
+        };
 
-      revalidatePath('/dashboard');
-      return { message: 'Report submitted successfully!', success: true };
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${process.env.API_URL}/api/lapor`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(report),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit report.');
+        }
+
+        revalidatePath('/dashboard');
+        return { message: 'Report submitted successfully!', success: true };
     } catch (error) {
-      console.error(error);
-      return { message: 'Failed to submit report.', success: false };
+        console.error(error);
+        return { message: 'Failed to submit report.', success: false };
     }
 }
 
@@ -277,48 +283,46 @@ export type {
 }
 
 export async function getDashboardStatus(): Promise<DashboardStatus> {
-    // Placeholder: Replace with actual API call to GET /api/dashboard-status
-    console.log("Fetching dashboard status (placeholder)...");
-    // Simulate a mix of states for testing
-    return {
-        activeBoost: {
-            profile: '12Mbps',
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        },
-        activeReport: {
-            id: 'report-123',
-            category: 'Slow Connection',
-            status: 'In Progress',
-        }
-    };
+    try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.API_URL}/api/dashboard-status`, { headers });
+        if (!res.ok) throw new Error('Failed to fetch dashboard status');
+        return await res.json();
+    } catch (error) {
+        console.error("Failed to fetch dashboard status:", error);
+        return { activeBoost: null, activeReport: null };
+    }
 }
 
 export async function getReportHistory(): Promise<ReportHistoryItem[]> {
-    // Placeholder: Replace with actual API call to GET /api/reports/history
-    console.log("Fetching report history (placeholder)...");
-    return [
-        { id: 'RPT-001', category: 'Slow Connection', status: 'Resolved', submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: 'RPT-002', category: 'No Connection', status: 'Resolved', submittedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: 'RPT-003', category: 'Other', status: 'Submitted', submittedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
-    ];
+    try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.API_URL}/api/reports/history`, { headers });
+        if (!res.ok) throw new Error('Failed to fetch report history');
+        return await res.json();
+    } catch (error) {
+        console.error("Failed to fetch report history:", error);
+        return [];
+    }
 }
 
 export async function requestSpeedBoost(targetPackageName: string, duration: string) {
-    const session = await getAuthSession();
-    if (!session?.user?.id) {
-      return { message: 'Authentication required.', success: false };
-    }
-
-    const boostRequest = {
-        phoneNumber: session.user.id,
-        targetPackageName: targetPackageName,
-        duration: duration
-    };
-
     try {
+        const session = await getAuthSession();
+        if (!session?.user?.id) {
+          return { message: 'Authentication required.', success: false };
+        }
+
+        const boostRequest = {
+            phoneNumber: session.user.id,
+            targetPackageName: targetPackageName,
+            duration: duration
+        };
+
+        const headers = await getAuthHeaders();
         const response = await fetch(`${process.env.API_URL}/api/request-speed`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(boostRequest),
         });
 

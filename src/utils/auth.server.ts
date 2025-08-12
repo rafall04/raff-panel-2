@@ -24,12 +24,12 @@ export const verify = async (phoneNumber: string, otp: string) => {
             'Content-Type': 'application/json'
         }
     })
-    // Verify phone number and OTP
+
     const json = await req.json();
+
     return {
         status: req.status,
-        user: json.user as {
-            deviceId: string,
-        }
+        user: json.user as { deviceId: string },
+        token: json.token as string | undefined
     }
 }

@@ -14,9 +14,12 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 const r = await verify(credentials!.phoneNumber, credentials!.otp);
-                if (r.status == 200) return {
-                    id: credentials!.phoneNumber,
-                    deviceId: r.user.deviceId
+                if (r.status === 200 && r.token) {
+                    return {
+                        id: credentials!.phoneNumber,
+                        deviceId: r.user.deviceId,
+                        backendToken: r.token,
+                    }
                 }
                 return null;
             },
@@ -35,16 +38,14 @@ export const authOptions: NextAuthOptions = {
             if (user) {
                 token.id = user.id;
                 token.deviceId = user.deviceId;
+                token.backendToken = user.backendToken;
             }
             return token;
         },
         async session({ token, session }){
-            // session.user = {
-            //     id: token!.id,
-            //     deviceId: token!.deviceId
-            // }
             session.user.id = token.id;
             session.user.deviceId = token.deviceId;
+            session.user.backendToken = token.backendToken;
             return session;
         },
         redirect(){

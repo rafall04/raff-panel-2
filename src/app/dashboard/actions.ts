@@ -394,7 +394,6 @@ export type {
     AssociatedDevice,
     CustomerInfo,
     BoostPackage,
-    Package,
     ReportHistoryItem,
     DashboardStatus
 }

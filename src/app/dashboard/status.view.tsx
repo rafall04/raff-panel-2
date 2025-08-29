@@ -5,7 +5,7 @@ import { Hourglass, Zap } from 'lucide-react';
 
 export default function StatusView({ status }: { status: DashboardStatus }) {
     return (
-        <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl col-span-1 md:col-span-2 xl:col-span-3">
+        <div className="card bg-white/10 border border-white/20 shadow-xl col-span-1 md:col-span-2 xl:col-span-3">
             <div className="card-body">
                 <h2 className="card-title text-white">Status Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">

@@ -62,7 +62,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                 </div>
 
                 {/* Status Card */}
-                <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl xl:col-span-2">
+                <div className="card bg-white/10 border border-white/20 shadow-2xl xl:col-span-2">
                     <div className="card-body">
                         <div className="flex justify-between items-start">
                             <div>
@@ -71,7 +71,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                                 <p className="text-sm text-gray-400">Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
+                                <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400' : 'bg-red-500'}`}></div>
                                 <span className="text-white">{isOnline ? 'Online' : 'Offline'}</span>
                             </div>
                         </div>
@@ -84,7 +84,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                 </div>
 
                 {/* Associated Devices Table Card */}
-                <div className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
+                <div className="card bg-white/10 border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
                     <div className="card-body">
                         <h1 className="card-title text-white flex items-center"><Users className="mr-2"/>Associated Devices</h1>
                         <div className="overflow-x-auto">

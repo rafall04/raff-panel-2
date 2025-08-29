@@ -75,6 +75,28 @@ interface BoostPackage {
     };
 }
 
+export interface Package {
+    name: string;
+    price: string;
+    profile: string;
+}
+
+export async function getAvailablePackages(): Promise<Package[]> {
+    try {
+        const headers = await getAuthHeaders();
+        // TODO: The endpoint is an assumption. Need to verify.
+        const res = await fetch(`${process.env.API_URL}/api/packages`, { headers });
+        if (!res.ok) {
+            throw new Error('Failed to fetch packages');
+        }
+        const data = await res.json();
+        return data.data;
+    } catch (error) {
+        console.error("Failed to fetch packages:", error);
+        return [];
+    }
+}
+
 export async function getBoostPackages(): Promise<BoostPackage[]> {
     try {
         const headers = await getAuthHeaders();
@@ -333,6 +355,38 @@ export async function requestSpeedBoost(targetPackageName: string, duration: str
     }
 }
 
+export async function requestPackageChange(targetPackageName: string) {
+    try {
+        const session = await getAuthSession();
+        if (!session?.user?.id) {
+          return { message: 'Authentication required.', success: false };
+        }
+
+        const changeRequest = {
+            targetPackageName: targetPackageName,
+        };
+
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${process.env.API_URL}/api/customer/request-package-change`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(changeRequest),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            return { message: responseData.message || 'An unknown error occurred.', success: false };
+        }
+
+        revalidatePath('/dashboard/settings');
+        return { message: responseData.message || 'Package change requested successfully!', success: true };
+    } catch (error) {
+        console.error(error);
+        return { message: 'An internal error occurred.', success: false };
+    }
+}
+
 export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo };
 export type {
     SSID,
@@ -340,6 +394,7 @@ export type {
     AssociatedDevice,
     CustomerInfo,
     BoostPackage,
+    Package,
     ReportHistoryItem,
     DashboardStatus
 }

@@ -27,7 +27,7 @@ const PaymentStatusBadge = ({ status }: { status: string }) => {
 export default function CustomerView({ customerInfo }: { customerInfo: CustomerInfo | null }) {
     if (!customerInfo) {
         return (
-            <div className="card bg-white/10 backdrop-blur-lg border border-white/20 w-full shrink-0 shadow-2xl">
+            <div className="card bg-white/10 border border-white/20 w-full shrink-0 shadow-2xl">
                 <div className="card-body items-center text-center">
                     <h2 className="card-title text-white">Customer Information</h2>
                     <p>No customer data available.</p>
@@ -38,7 +38,7 @@ export default function CustomerView({ customerInfo }: { customerInfo: CustomerI
     }
 
     return (
-        <div className="card bg-white/10 backdrop-blur-lg border border-white/20 w-full shrink-0 shadow-2xl">
+        <div className="card bg-white/10 border border-white/20 w-full shrink-0 shadow-2xl">
             <div className="card-body">
                 <h1 className="card-title text-white flex items-center"><User size={20} className="mr-2"/>Customer Information</h1>
                 <div className="space-y-4 mt-2">

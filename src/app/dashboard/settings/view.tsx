@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { rebootRouter, requestPackageChange } from '../actions';
+import { rebootRouter, requestPackageChange, updateCredentials } from '../actions';
 import type { CustomerInfo, Package } from '../actions';
-import { Settings, LogOut, Power, MessageSquareWarning, Check, X, LoaderCircle, PackageCheck, ArrowRight } from 'lucide-react';
+import { Settings, LogOut, Power, MessageSquareWarning, Check, X, LoaderCircle, PackageCheck, ArrowRight, User, Lock, KeyRound } from 'lucide-react';
 
 // Helper to format currency
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -25,7 +25,56 @@ export default function SettingsView({
     const [isChangeLoading, setIsChangeLoading] = useState(false);
     const [notification, setNotification] = useState<{ message: string; success: boolean } | null>(null);
 
+    // State for credentials update
+    const [newUsername, setNewUsername] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [isCredentialUpdateLoading, setIsCredentialUpdateLoading] = useState(false);
+    const [credentialNotification, setCredentialNotification] = useState<{ message: string; success: boolean } | null>(null);
+
+
     const availablePackages = allPackages.filter(p => p.name !== currentCustomerInfo.packageName);
+
+    const handleUpdateCredentials = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCredentialNotification(null);
+
+        if (newPassword !== confirmNewPassword) {
+            setCredentialNotification({ message: "New passwords do not match!", success: false });
+            return;
+        }
+
+        if (!currentPassword) {
+            setCredentialNotification({ message: "Current password is required to make changes.", success: false });
+            return;
+        }
+
+        if (!newUsername && !newPassword) {
+            setCredentialNotification({ message: "You must provide either a new username or a new password.", success: false });
+            return;
+        }
+
+        setIsCredentialUpdateLoading(true);
+
+        try {
+            const result = await updateCredentials(currentPassword, newUsername || undefined, newPassword || undefined);
+            if (result.status === 200) {
+                setCredentialNotification({ message: result.message || 'Credentials updated successfully!', success: true });
+                setNewUsername('');
+                setNewPassword('');
+                setConfirmNewPassword('');
+                setCurrentPassword('');
+            } else {
+                setCredentialNotification({ message: result.message || 'Failed to update credentials.', success: false });
+            }
+        } catch (error) {
+            setCredentialNotification({ message: 'An unexpected error occurred.', success: false });
+        } finally {
+            setIsCredentialUpdateLoading(false);
+            setTimeout(() => setCredentialNotification(null), 5000);
+        }
+    };
 
     const handleLogout = () => {
         signOut({ callbackUrl: '/login' });
@@ -189,6 +238,91 @@ export default function SettingsView({
                         </div>
                     </div>
                 </div>
+
+                {/* Account Credentials Card */}
+                <div className="card bg-white/10 border border-white/20">
+                    <div className="card-body">
+                        <h2 className="card-title text-white">Account Credentials</h2>
+                        <p className="text-sm text-gray-400 mb-4">Update your username or password. Requires current password for verification.</p>
+                        <form onSubmit={handleUpdateCredentials} className="space-y-4">
+                            <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text text-white/70">Current Password (Required)</span>
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                    <input
+                                        type="password"
+                                        placeholder="Enter your current password"
+                                        className="input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                             <div className="form-control">
+                                <label className="label">
+                                    <span className="label-text text-white/70">New Username</span>
+                                </label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Leave blank to keep unchanged"
+                                        className="input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30"
+                                        value={newUsername}
+                                        onChange={(e) => setNewUsername(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text text-white/70">New Password</span>
+                                    </label>
+                                     <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                        <input
+                                            type="password"
+                                            placeholder="Leave blank to keep unchanged"
+                                            className="input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-control">
+                                    <label className="label">
+                                        <span className="label-text text-white/70">Confirm New Password</span>
+                                    </label>
+                                    <div className="relative">
+                                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                        <input
+                                            type="password"
+                                            placeholder="Confirm new password"
+                                            className="input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30"
+                                            value={confirmNewPassword}
+                                            onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            {credentialNotification && (
+                                <div className={`text-sm ${credentialNotification.success ? 'text-green-400' : 'text-red-400'}`}>
+                                    {credentialNotification.message}
+                                </div>
+                            )}
+                            <div className="card-actions justify-end">
+                                <button type="submit" className="btn btn-primary" disabled={isCredentialUpdateLoading}>
+                                    {isCredentialUpdateLoading ? <LoaderCircle className="animate-spin" /> : <Check />}
+                                    Update Credentials
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
 
                 <div className="card bg-white/10 border border-white/20">
                     <div className="card-body">

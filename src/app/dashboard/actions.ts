@@ -1,7 +1,10 @@
 "use server";
 
+"use server";
+
 import { getAuthSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { updateCredentials } from "@/utils/auth.server";
 
 // Helper to get auth headers
 async function getAuthHeaders() {
@@ -387,7 +390,7 @@ export async function requestPackageChange(targetPackageName: string) {
     }
 }
 
-export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo };
+export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo, updateCredentials };
 export type {
     SSID,
     SSIDInfo,

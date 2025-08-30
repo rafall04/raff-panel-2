@@ -1,13 +1,14 @@
 import type { NextAuthOptions } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { verify } from '@/utils/auth.server';
+import { verify, verifyPassword } from '@/utils/auth.server';
   
 export const authOptions: NextAuthOptions = {
     // adapter: PrismaAdapter(prisma),
     providers: [
         CredentialsProvider({
-            name: 'Credentials',
+            id: 'otp',
+            name: 'OTP',
             credentials: {
               phoneNumber: {},
               otp: {},
@@ -23,7 +24,26 @@ export const authOptions: NextAuthOptions = {
                 }
                 return null;
             },
-          }),
+        }),
+        CredentialsProvider({
+            id: 'credentials',
+            name: 'Credentials',
+            credentials: {
+                username: {},
+                password: {}
+            },
+            async authorize(credentials) {
+                const r = await verifyPassword(credentials!.username, credentials!.password);
+                if (r.status === 200 && r.token && r.user) {
+                    return {
+                        id: credentials!.username,
+                        deviceId: r.user.deviceId,
+                        backendToken: r.token,
+                    }
+                }
+                return null;
+            }
+        })
     ],
     session: {
         strategy: 'jwt',

@@ -177,7 +177,7 @@ export default function Login() {
             <div className="flex items-center justify-center p-6 bg-gradient-to-r from-background-start to-background-end">
                 <div className="card w-full max-w-md bg-white/10 shadow-2xl backdrop-blur-lg border border-white/20">
                     <div className="card-body">
-                        <div role="tablist" className="tabs tabs-boxed grid grid-cols-2 bg-black/20 mb-6">
+                        <div role="tablist" className="tabs tabs-boxed grid grid-cols-2 bg-black/20 mb-6 border-4 border-red-500">
                             <a role="tab" className={`tab ${loginMethod === 'otp' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('otp')}>Phone & OTP</a>
                             <a role="tab" className={`tab ${loginMethod === 'username-password' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('username-password')}>Username</a>
                         </div>

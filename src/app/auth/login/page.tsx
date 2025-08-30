@@ -9,7 +9,7 @@ import { Phone, KeyRound, User, Lock, ArrowRight } from 'lucide-react'; // Impor
 type LoginMethod = 'otp' | 'username-password';
 
 export default function Login() {
-    const [loginMethod, setLoginMethod] = useState<LoginMethod>('otp');
+    const [loginMethod, setLoginMethod] = useState<LoginMethod>('username-password');
 
     // State for OTP login
     const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
@@ -115,6 +115,18 @@ export default function Login() {
                     )}
                 </button>
             </div>
+            <div className="text-center mt-4">
+                <a
+                    href="#"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        setLoginMethod('username-password');
+                    }}
+                    className="text-sm text-gray-400 hover:text-white hover:underline"
+                >
+                    Login with Username & Password
+                </a>
+            </div>
         </form>
     );
 
@@ -160,6 +172,18 @@ export default function Login() {
                     )}
                 </button>
             </div>
+            <div className="text-center mt-4">
+                <a
+                    href="#"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        setLoginMethod('otp');
+                    }}
+                    className="text-sm text-gray-400 hover:text-white hover:underline"
+                >
+                    Login with Phone & OTP
+                </a>
+            </div>
         </form>
     );
 
@@ -177,13 +201,8 @@ export default function Login() {
             <div className="flex items-center justify-center p-6 bg-gradient-to-r from-background-start to-background-end">
                 <div className="card w-full max-w-md bg-white/10 shadow-2xl backdrop-blur-lg border border-white/20">
                     <div className="card-body">
-                        <div role="tablist" className="tabs tabs-boxed grid grid-cols-2 bg-black/20 mb-6 border-4 border-red-500">
-                            <a role="tab" className={`tab ${loginMethod === 'otp' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('otp')}>Phone & OTP</a>
-                            <a role="tab" className={`tab ${loginMethod === 'username-password' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('username-password')}>Username</a>
-                        </div>
-
-                        <h2 className="text-center text-3xl font-bold mb-2 text-white">
-                            {loginMethod === 'otp' ? (otpRequested ? 'Enter Your Code' : 'Welcome Back') : 'Login with Username'}
+                        <h2 className="text-center text-3xl font-bold mb-6 text-white">
+                            {loginMethod === 'otp' ? (otpRequested ? 'Enter Your Code' : 'Welcome Back') : 'Login'}
                         </h2>
 
                         {alertMessage && (

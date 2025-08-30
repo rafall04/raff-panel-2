@@ -69,6 +69,7 @@ export default function SettingsView({
                 setCredentialNotification({ message: result.message || 'Failed to update credentials.', success: false });
             }
         } catch (error) {
+            console.error("Failed to update credentials:", error);
             setCredentialNotification({ message: 'An unexpected error occurred.', success: false });
         } finally {
             setIsCredentialUpdateLoading(false);

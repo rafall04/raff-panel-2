@@ -1,21 +1,9 @@
 "use client";
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { requestOtp } from '@/utils/auth.server';
-import 'react-phone-number-input/style.css'
-import PhoneInput from 'react-phone-number-input'
-import { Phone, KeyRound, User, Lock, ArrowRight } from 'lucide-react'; // Import icons
-
-type LoginMethod = 'otp' | 'username-password';
+import { User, Lock, ArrowRight } from 'lucide-react'; // Import icons
 
 export default function Login() {
-    const [loginMethod, setLoginMethod] = useState<LoginMethod>('username-password');
-
-    // State for OTP login
-    const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
-    const [otp, setOtp] = useState('');
-    const [otpRequested, setOtpRequested] = useState(false);
-
     // State for Credentials login
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -23,36 +11,6 @@ export default function Login() {
     // Common state
     const [alertMessage, setAlertMessage] = useState('');
     const [loading, setLoading] = useState(false);
-
-    const handleRequestOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setAlertMessage('');
-        const status = await requestOtp(phoneNumber!.slice(1));
-        if (status === 200) {
-            setOtpRequested(true);
-        } else {
-            setAlertMessage(status == 404 ? 'User Not Found' : 'Failed to request OTP');
-        }
-        setLoading(false);
-    };
-
-    const handleOtpLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setAlertMessage('');
-        const result = await signIn('credentials', {
-            callbackUrl: '/dashboard',
-            redirect: true,
-            phoneNumber: phoneNumber!.slice(1),
-            otp,
-        });
-
-        if (result?.error) {
-            setAlertMessage('Invalid OTP or failed to sign in.');
-            setLoading(false);
-        }
-    };
 
     const handleCredentialsLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,65 +28,6 @@ export default function Login() {
             setLoading(false);
         }
     };
-
-    const renderOtpForm = () => (
-        <form onSubmit={otpRequested ? handleOtpLogin : handleRequestOtp}>
-            <div className="form-control space-y-4">
-                <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <PhoneInput
-                        placeholder="Enter phone number"
-                        defaultCountry='ID'
-                        value={phoneNumber}
-                        className='input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30 focus:border-primary'
-                        onChange={(e) => setPhoneNumber(e)}
-                        disabled={otpRequested || loading}
-                    />
-                </div>
-
-                {otpRequested && (
-                    <div className="relative">
-                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="OTP Code"
-                            className="input input-bordered w-full pl-10 text-white bg-black/20 focus:bg-black/30 focus:border-primary"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            required
-                            disabled={loading}
-                        />
-                    </div>
-                )}
-            </div>
-            <div className="form-control mt-6">
-                <button
-                    className="btn bg-primary text-white border-none hover:bg-violet-700 w-full group"
-                    type="submit"
-                    disabled={!phoneNumber || loading}
-                >
-                    {loading ? <span className="loading loading-spinner"></span> : (
-                        <>
-                            <span>{otpRequested ? 'Login with OTP' : 'Request OTP'}</span>
-                            <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </>
-                    )}
-                </button>
-            </div>
-            <div className="text-center mt-4">
-                <a
-                    href="#"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        setLoginMethod('username-password');
-                    }}
-                    className="text-sm text-gray-400 hover:text-white hover:underline"
-                >
-                    Login with Username & Password
-                </a>
-            </div>
-        </form>
-    );
 
     const renderCredentialsForm = () => (
         <form onSubmit={handleCredentialsLogin}>
@@ -172,18 +71,6 @@ export default function Login() {
                     )}
                 </button>
             </div>
-            <div className="text-center mt-4">
-                <a
-                    href="#"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        setLoginMethod('otp');
-                    }}
-                    className="text-sm text-gray-400 hover:text-white hover:underline"
-                >
-                    Login with Phone & OTP
-                </a>
-            </div>
         </form>
     );
 
@@ -202,7 +89,7 @@ export default function Login() {
                 <div className="card w-full max-w-md bg-white/10 shadow-2xl backdrop-blur-lg border border-white/20">
                     <div className="card-body">
                         <h2 className="text-center text-3xl font-bold mb-6 text-white">
-                            {loginMethod === 'otp' ? (otpRequested ? 'Enter Your Code' : 'Welcome Back') : 'Login'}
+                           Login
                         </h2>
 
                         {alertMessage && (
@@ -212,7 +99,7 @@ export default function Login() {
                             </div>
                         )}
 
-                        {loginMethod === 'otp' ? renderOtpForm() : renderCredentialsForm()}
+                        {renderCredentialsForm()}
                     </div>
                 </div>
             </div>

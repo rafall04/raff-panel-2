@@ -7,13 +7,14 @@ export const authOptions: NextAuthOptions = {
     // adapter: PrismaAdapter(prisma),
     providers: [
         CredentialsProvider({
-            id: 'otp',
+            id: 'credentials',
             name: 'OTP',
             credentials: {
               phoneNumber: {},
               otp: {},
             },
             async authorize(credentials) {
+                // This is the original provider, now with the default 'credentials' id
                 const r = await verify(credentials!.phoneNumber, credentials!.otp);
                 if (r.status === 200 && r.token) {
                     return {
@@ -26,8 +27,8 @@ export const authOptions: NextAuthOptions = {
             },
         }),
         CredentialsProvider({
-            id: 'credentials',
-            name: 'Credentials',
+            id: 'username-password',
+            name: 'Username & Password',
             credentials: {
                 username: {},
                 password: {}

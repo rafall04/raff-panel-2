@@ -6,7 +6,7 @@ import 'react-phone-number-input/style.css'
 import PhoneInput from 'react-phone-number-input'
 import { Phone, KeyRound, User, Lock, ArrowRight } from 'lucide-react'; // Import icons
 
-type LoginMethod = 'otp' | 'credentials';
+type LoginMethod = 'otp' | 'username-password';
 
 export default function Login() {
     const [loginMethod, setLoginMethod] = useState<LoginMethod>('otp');
@@ -41,7 +41,7 @@ export default function Login() {
         e.preventDefault();
         setLoading(true);
         setAlertMessage('');
-        const result = await signIn('otp', {
+        const result = await signIn('credentials', {
             callbackUrl: '/dashboard',
             redirect: true,
             phoneNumber: phoneNumber!.slice(1),
@@ -58,7 +58,7 @@ export default function Login() {
         e.preventDefault();
         setLoading(true);
         setAlertMessage('');
-        const result = await signIn('credentials', {
+        const result = await signIn('username-password', {
             callbackUrl: '/dashboard',
             redirect: true,
             username,
@@ -179,7 +179,7 @@ export default function Login() {
                     <div className="card-body">
                         <div role="tablist" className="tabs tabs-boxed grid grid-cols-2 bg-black/20 mb-6">
                             <a role="tab" className={`tab ${loginMethod === 'otp' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('otp')}>Phone & OTP</a>
-                            <a role="tab" className={`tab ${loginMethod === 'credentials' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('credentials')}>Username</a>
+                            <a role="tab" className={`tab ${loginMethod === 'username-password' ? 'tab-active bg-primary' : ''}`} onClick={() => setLoginMethod('username-password')}>Username</a>
                         </div>
 
                         <h2 className="text-center text-3xl font-bold mb-2 text-white">

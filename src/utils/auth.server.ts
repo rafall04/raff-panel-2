@@ -10,7 +10,7 @@ export const requestOtp = async (phoneNumber: string) => {
             'Content-Type': 'application/json'
         }
     })
-    return req.status;
+    return req;
 }
 
 export const verify = async (phoneNumber: string, otp: string) => {

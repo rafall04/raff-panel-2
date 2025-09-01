@@ -57,11 +57,11 @@ export default function Login() {
                 try {
                     const body = await status.json();
                     setAlertMessage(body.message || 'Failed to send OTP. Please try again.');
-                } catch (e) {
+                } catch (_e) {
                     setAlertMessage('Failed to send OTP. Please check the number and try again.');
                 }
             }
-        } catch (error) {
+        } catch (_error) {
             setAlertMessage('An error occurred. Please try again.');
         }
         setLoading(false);

@@ -48,14 +48,14 @@ export default function Login() {
         setLoading(true);
         setAlertMessage('');
         try {
-            const status = await requestOtp(phoneNumber);
-            if (status === 200) {
+            const response = await requestOtp(phoneNumber);
+            if (response.ok) {
                 setOtpSent(true);
                 setAlertMessage('OTP has been sent to your WhatsApp.');
             } else {
                 // Assuming the error response is JSON with a 'message' field
                 try {
-                    const body = await status.json();
+                    const body = await response.json();
                     setAlertMessage(body.message || 'Failed to send OTP. Please try again.');
                 } catch {
                     setAlertMessage('Failed to send OTP. Please check the number and try again.');

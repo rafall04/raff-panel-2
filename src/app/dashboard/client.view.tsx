@@ -6,13 +6,12 @@ import { getSSIDInfo, refreshObject } from "./actions";
 
 import CustomerView from "./customer.view";
 import StatusView from "./status.view";
-import { RefreshCw, Users, Wifi, BarChart2 } from 'lucide-react';
+import { RefreshCw, BarChart2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";

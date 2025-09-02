@@ -17,7 +17,7 @@ export const requestOtp = async (phoneNumber: string) => {
             ok: req.ok,
             message: data.message
         };
-    } catch (error) {
+    } catch (_error) {
         return {
             ok: false,
             message: 'An unexpected error occurred.'

@@ -16,47 +16,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-    CartesianGrid
-} from 'recharts';
-
-// New component for the device chart
-const AssociatedDevicesChart = ({ devices }: { devices: SSIDInfo['ssid'][0]['associatedDevices'] }) => {
-    const chartData = devices.map(device => ({
-        name: device.hostName || device.mac || "Unknown Device",
-        signal: device.signal ? parseInt(device.signal.replace(' dBm', '')) : 0,
-    })).filter(device => device.signal < 0); // Filter out devices with no signal data
-
-    if (chartData.length === 0) {
-        return <p className="text-muted-foreground text-center py-8">No devices with signal data to display.</p>
-    }
-
-    return (
-        <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} interval={0} />
-                <YAxis domain={[-100, 0]} label={{ value: 'Signal (dBm)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip
-                    contentStyle={{
-                        backgroundColor: "hsl(var(--background))",
-                        borderColor: "hsl(var(--border))"
-                    }}
-                    labelStyle={{ color: "hsl(var(--foreground))" }}
-                />
-                <Legend />
-                <Bar dataKey="signal" name="Signal Strength (dBm)" fill="hsl(var(--primary))" />
-            </BarChart>
-        </ResponsiveContainer>
-    );
-};
+import AssociatedDevicesTable from "./associated-devices-table";
 
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
@@ -139,11 +99,11 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center"><BarChart2 className="mr-2"/>Associated Devices Signal Strength</CardTitle>
-                            <CardDescription>Signal strength of currently connected devices.</CardDescription>
+                            <CardTitle>Associated Devices</CardTitle>
+                            <CardDescription>A list of devices currently connected to your network.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AssociatedDevicesChart devices={allDevices} />
+                            <AssociatedDevicesTable devices={allDevices} />
                         </CardContent>
                     </Card>
                 </div>

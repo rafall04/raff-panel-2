@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { User, Lock, ArrowRight, Smartphone, Key } from 'lucide-react';
 import { requestOtp } from '@/utils/auth.server';
+import toast from 'react-hot-toast';
 
 type LoginMethod = 'password' | 'otp';
 
@@ -20,13 +21,11 @@ export default function Login() {
     const [otpSent, setOtpSent] = useState(false);
 
     // Common state
-    const [alertMessage, setAlertMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleCredentialsLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setAlertMessage('');
         const result = await signIn('username-password', {
             redirect: false,
             username,
@@ -37,26 +36,25 @@ export default function Login() {
         if (result?.ok) {
             window.location.href = '/dashboard';
         } else {
-            setAlertMessage(result?.error || 'An unknown error occurred.');
+            toast.error(result?.error || 'An unknown error occurred.');
         }
     };
 
     const handleRequestOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         if (!/^\d{10,15}$/.test(phoneNumber)) {
-            setAlertMessage('Invalid phone number format.');
+            toast.error('Invalid phone number format.');
             return;
         }
         setLoading(true);
-        setAlertMessage('');
 
         const response = await requestOtp(phoneNumber);
 
         if (response.ok) {
             setOtpSent(true);
-            setAlertMessage(response.message || 'OTP has been sent to your WhatsApp.');
+            toast.success(response.message || 'OTP has been sent to your WhatsApp.');
         } else {
-            setAlertMessage(response.message || 'Failed to send OTP. Please try again.');
+            toast.error(response.message || 'Failed to send OTP. Please try again.');
         }
 
         setLoading(false);
@@ -65,7 +63,6 @@ export default function Login() {
     const handleWhatsAppLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setAlertMessage('');
         const result = await signIn('credentials', {
             redirect: false,
             phoneNumber,
@@ -76,7 +73,7 @@ export default function Login() {
         if (result?.ok) {
             window.location.href = '/dashboard';
         } else {
-            setAlertMessage(result?.error || 'An unknown error occurred.');
+            toast.error(result?.error || 'An unknown error occurred.');
         }
     };
 
@@ -189,7 +186,6 @@ export default function Login() {
         setPhoneNumber('');
         setOtp('');
         setOtpSent(false);
-        setAlertMessage('');
         setLoading(false);
     }
 
@@ -218,14 +214,6 @@ export default function Login() {
                         <p className="text-center text-sm text-gray-400 mb-6">
                             {loginMethod === 'password' ? 'Using your username and password' : 'Using your WhatsApp number'}
                         </p>
-
-
-                        {alertMessage && (
-                            <div role="alert" className={`alert ${otpSent && !alertMessage.includes("Invalid") && !alertMessage.includes("Failed") ? 'alert-success' : 'alert-error'} text-white bg-opacity-50 mb-4 border-none`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span>{alertMessage}</span>
-                            </div>
-                        )}
 
                         {loginMethod === 'password' ? renderCredentialsForm() : renderWhatsAppForm()}
                     </div>

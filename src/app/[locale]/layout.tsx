@@ -4,7 +4,10 @@ import "../globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+
+// Direct import for messages as a workaround for the Next.js build issue
+import enMessages from "../../../messages/en.json";
+import idMessages from "../../../messages/id.json";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,16 +24,15 @@ export const metadata: Metadata = {
   description: "RAF CYBER NET Wifi Portal",
 };
 
-export default async function LocaleLayout({
+export default function LocaleLayout({
   children,
   params: { locale },
 }: {
   children: React.ReactNode;
   params: { locale: string };
 }) {
-  // Providing all messages to the client
-  // side is a good default.
-  const messages = await getMessages();
+  // Select messages based on locale
+  const messages = locale === "id" ? idMessages : enMessages;
 
   return (
     <html lang={locale} suppressHydrationWarning>

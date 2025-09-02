@@ -14,16 +14,26 @@ export const authOptions: NextAuthOptions = {
               otp: {},
             },
             async authorize(credentials) {
-                // This is the original provider, now with the default 'credentials' id
-                const r = await verify(credentials!.phoneNumber, credentials!.otp);
-                if (r.status === 200 && r.token) {
-                    return {
-                        id: credentials!.phoneNumber,
-                        deviceId: r.user.deviceId,
-                        backendToken: r.token,
-                    }
+                if (!credentials?.phoneNumber || !credentials.otp) {
+                    throw new Error("Phone number and OTP are required.");
                 }
-                return null;
+                const r = await verify(credentials.phoneNumber, credentials.otp);
+
+                if (r.status !== 200) {
+                    throw new Error(`Backend returned status ${r.status}.`);
+                }
+                if (!r.token) {
+                    throw new Error("Authentication failed: Token not received from backend.");
+                }
+                if (!r.user) {
+                    throw new Error("Authentication failed: User data not received from backend.");
+                }
+
+                return {
+                    id: credentials.phoneNumber,
+                    deviceId: r.user.deviceId,
+                    backendToken: r.token,
+                };
             },
         }),
         CredentialsProvider({
@@ -34,15 +44,26 @@ export const authOptions: NextAuthOptions = {
                 password: {}
             },
             async authorize(credentials) {
-                const r = await verifyPassword(credentials!.username, credentials!.password);
-                if (r.status === 200 && r.token && r.user) {
-                    return {
-                        id: credentials!.username,
-                        deviceId: r.user.deviceId,
-                        backendToken: r.token,
-                    }
+                if (!credentials?.username || !credentials.password) {
+                    throw new Error("Username and password are required.");
                 }
-                return null;
+                const r = await verifyPassword(credentials.username, credentials.password);
+
+                if (r.status !== 200) {
+                    throw new Error(`Backend returned status ${r.status}.`);
+                }
+                if (!r.token) {
+                    throw new Error("Authentication failed: Token not received from backend.");
+                }
+                if (!r.user) {
+                    throw new Error("Authentication failed: User data not received from backend.");
+                }
+
+                return {
+                    id: credentials.username,
+                    deviceId: r.user.deviceId,
+                    backendToken: r.token,
+                };
             }
         })
     ],

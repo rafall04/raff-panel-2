@@ -90,31 +90,13 @@ const config = {
 				'50%': {
 					'box-shadow': '0 0 10px 2px rgba(239, 68, 68, 0.3)'
 				}
-			},
-			'accordion-down': {
-				from: {
-					height: '0'
-				},
-				to: {
-					height: 'var(--radix-accordion-content-height)'
-				}
-			},
-			'accordion-up': {
-				from: {
-					height: 'var(--radix-accordion-content-height)'
-				},
-				to: {
-					height: '0'
-				}
 			}
 		},
 		animation: {
 			'accordion-down': 'accordion-down 0.2s ease-out',
 			'accordion-up': 'accordion-up 0.2s ease-out',
 			'glow-green': 'glow-green 2s ease-in-out infinite',
-			'glow-red': 'glow-red 2s ease-in-out infinite',
-			'accordion-down': 'accordion-down 0.2s ease-out',
-			'accordion-up': 'accordion-up 0.2s ease-out'
+			'glow-red': 'glow-red 2s ease-in-out infinite'
 		}
 	}
   },

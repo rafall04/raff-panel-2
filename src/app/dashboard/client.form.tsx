@@ -20,7 +20,7 @@ export default function Form({ ssid, selectedSsid, syncedSsids, refreshSsidInfo 
         e.preventDefault();
         setLoading(true);
 
-        const tasks = [];
+        const tasks: Promise<{ message: string }>[] = [];
         if(form.ssid !== ssid.find(v => v.id == selectedSsid)?.name){
             const sids = syncedSsids.length > 0 ? syncedSsids : [selectedSsid];
             sids.forEach(id => tasks.push(setSSIDName(id, form.ssid)));

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { User, Lock, ArrowRight, Smartphone, Key, Loader2, Router } from 'lucide-react';
+import { ArrowRight, Smartphone, Key, Loader2, Router } from 'lucide-react';
 import { requestOtp } from '@/utils/auth.server';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';

@@ -28,19 +28,21 @@ export default function Login() {
         setLoading(true);
         setAlertMessage('');
         const result = await signIn('username-password', {
-            callbackUrl: '/dashboard',
-            redirect: true,
+            redirect: false,
             username,
             password,
         });
 
-        if (result?.error) {
-            setAlertMessage('Invalid username or password.');
-            setLoading(false);
+        setLoading(false);
+        if (result?.ok) {
+            window.location.href = '/dashboard';
+        } else {
+            setAlertMessage(result?.error || 'An unknown error occurred.');
         }
     };
 
-    const handleRequestOtp = async () => {
+    const handleRequestOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
         if (!/^\d{10,15}$/.test(phoneNumber)) {
             setAlertMessage('Invalid phone number format.');
             return;
@@ -65,15 +67,16 @@ export default function Login() {
         setLoading(true);
         setAlertMessage('');
         const result = await signIn('credentials', {
-            callbackUrl: '/dashboard',
-            redirect: true,
+            redirect: false,
             phoneNumber,
             otp,
         });
 
-        if (result?.error) {
-            setAlertMessage('Invalid OTP. Please try again.');
-            setLoading(false);
+        setLoading(false);
+        if (result?.ok) {
+            window.location.href = '/dashboard';
+        } else {
+            setAlertMessage(result?.error || 'An unknown error occurred.');
         }
     };
 
@@ -157,7 +160,7 @@ export default function Login() {
                     <button
                         className="btn bg-green-500 text-white border-none hover:bg-green-600 w-full"
                         type="button"
-                        onClick={handleRequestOtp}
+                        onClick={(e) => handleRequestOtp(e)}
                         disabled={!phoneNumber || loading}
                     >
                         {loading ? <span className="loading loading-spinner"></span> : 'Send OTP'}

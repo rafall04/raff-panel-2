@@ -68,9 +68,6 @@ export const authOptions: NextAuthOptions = {
             session.user.deviceId = token.deviceId;
             session.user.backendToken = token.backendToken;
             return session;
-        },
-        redirect(){
-            return '/dashboard';
         }
     }
 }

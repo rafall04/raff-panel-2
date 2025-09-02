@@ -4,10 +4,7 @@ import "../globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextIntlClientProvider } from "next-intl";
-
-// Direct import for messages as a workaround for the Next.js build issue
-import enMessages from "../../../messages/en.json";
-import idMessages from "../../../messages/id.json";
+import { getMessages, unstable_setRequestLocale } from "next-intl/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,15 +25,15 @@ export function generateStaticParams() {
   return [{ locale: "en" }, { locale: "id" }];
 }
 
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params: { locale },
 }: {
   children: React.ReactNode;
   params: { locale: string };
 }) {
-  // Select messages based on locale
-  const messages = locale === "id" ? idMessages : enMessages;
+  unstable_setRequestLocale(locale);
+  const messages = await getMessages();
 
   return (
     <html lang={locale} suppressHydrationWarning>

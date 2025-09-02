@@ -40,6 +40,8 @@ export default function SettingsView({
     const [isRebootDialogOpen, setRebootDialogOpen] = useState(false);
     const [isPackageListOpen, setPackageListOpen] = useState(false);
     const [isPackageConfirmOpen, setPackageConfirmOpen] = useState(false);
+    const [isErrorDialogOpen, setErrorDialogOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const availablePackages = allPackages.filter(p => p.name !== currentCustomerInfo.packageName);
 
@@ -104,21 +106,25 @@ export default function SettingsView({
         if (!selectedPackage) return;
 
         setIsChangeLoading(true);
-        const promise = requestPackageChange(selectedPackage.name);
+        try {
+            const result = await requestPackageChange(selectedPackage.name);
+            setPackageConfirmOpen(false); // Close confirmation dialog regardless of outcome
 
-        toast.promise(promise, {
-            loading: 'Requesting package change...',
-            success: (result) => {
-                setPackageConfirmOpen(false);
-                setPackageListOpen(false);
-                return result.message;
-            },
-            error: (err) => err.message,
-            finally: () => {
-                setIsChangeLoading(false);
-                setSelectedPackage(null);
+            if (result.success) {
+                toast.success(result.message || "Package change requested successfully!");
+                setPackageListOpen(false); // Close package list only on success
+            } else {
+                setErrorMessage(result.message || "An unknown error occurred.");
+                setErrorDialogOpen(true);
             }
-        });
+        } catch (error) {
+            setPackageConfirmOpen(false);
+            setErrorMessage(error instanceof Error ? error.message : "An unexpected error occurred.");
+            setErrorDialogOpen(true);
+        } finally {
+            setIsChangeLoading(false);
+            setSelectedPackage(null);
+        }
     };
 
     return (
@@ -259,6 +265,23 @@ export default function SettingsView({
                                 {isChangeLoading ? <LoaderCircle className="animate-spin mr-2"/> : <Check className="mr-2"/>}
                                 Confirm Request
                             </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isErrorDialogOpen} onOpenChange={setErrorDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle className="text-red-500 flex items-center">
+                                <MessageSquareWarning className="mr-2" />
+                                Request Failed
+                            </DialogTitle>
+                            <DialogDescription>
+                                {errorMessage}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setErrorDialogOpen(false)}>Close</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

@@ -17,6 +17,10 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import AssociatedDevicesTable from "./associated-devices-table";
+import AnnouncementDisplay from "./announcement-display";
+import AnnouncementForm from "./announcement-form";
+import NewsDisplay from "./news-display";
+import NewsForm from "./news-form";
 
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
@@ -57,6 +61,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
 
     return (
         <div className="space-y-6">
+            <AnnouncementDisplay />
             {/* Top Row: Main Status and Customer Info */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2">
@@ -110,6 +115,27 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                 <div className="lg:col-span-1">
                      <StatusView status={dashboardStatus} />
                 </div>
+            </div>
+
+            {/* News and Promotions Section */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Berita & Promo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <NewsDisplay />
+                </CardContent>
+            </Card>
+
+            {/* Admin Section */}
+            {/* TODO: Add authorization check here. This section should only be visible to admin users. */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                    <AnnouncementForm />
+                </Card>
+                <Card>
+                    <NewsForm />
+                </Card>
             </div>
         </div>
     );

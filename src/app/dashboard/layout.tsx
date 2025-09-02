@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
 import BottomNav from './bottom.nav';
 import ReportForm from './report.form';
 import { MessageSquareWarning } from 'lucide-react';
@@ -16,13 +18,23 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [companyName, setCompanyName] = useState("Memuat...");
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        setCompanyName(data.companyName);
+      });
+  }, []);
+
   return (
     <Dialog>
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center">
                 <div className="flex-1">
-                    <p className="font-bold">RAF-CYBER.NET</p>
+                    <p className="font-bold">{companyName}</p>
                 </div>
                 <ModeToggle />
             </div>

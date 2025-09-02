@@ -17,7 +17,7 @@ export const requestOtp = async (phoneNumber: string) => {
             ok: req.ok,
             message: data.message
         };
-    } catch (_error) {
+    } catch {
         return {
             ok: false,
             message: 'An unexpected error occurred.'
@@ -26,52 +26,50 @@ export const requestOtp = async (phoneNumber: string) => {
 }
 
 export const verify = async (phoneNumber: string, otp: string) => {
-    const req =  await fetch(`${process.env.API_URL}/api/auth/otp/verify`, {
-        method: 'POST',
-        body: JSON.stringify({
-            phoneNumber,
-            otp
-        }),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
+    try {
+        const req = await fetch(`${process.env.API_URL}/api/auth/otp/verify`, {
+            method: 'POST',
+            body: JSON.stringify({ phoneNumber, otp }),
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-    const json = await req.json();
+        const json = await req.json().catch(() => ({}));
 
-    return {
-        status: req.status,
-        user: json.user as { deviceId: string },
-        token: json.token as string | undefined
+        return {
+            status: req.status,
+            user: json.user || null,
+            token: json.token || undefined
+        };
+    } catch {
+        return {
+            status: 500,
+            user: null,
+            token: undefined
+        };
     }
 }
 
 export const verifyPassword = async (username: string, password: string) => {
-    const req =  await fetch(`${process.env.API_URL}/api/auth/login`, {
-        method: 'POST',
-        body: JSON.stringify({
-            username,
-            password
-        }),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
+    try {
+        const req = await fetch(`${process.env.API_URL}/api/auth/login`, {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-    if (req.status !== 200) {
+        const json = await req.json().catch(() => ({}));
+
         return {
             status: req.status,
+            user: json.user || null,
+            token: json.token || undefined
+        };
+    } catch {
+        return {
+            status: 500,
             user: null,
             token: undefined
-        }
-    }
-
-    const json = await req.json();
-
-    return {
-        status: req.status,
-        user: json.user as { deviceId: string },
-        token: json.token as string | undefined
+        };
     }
 }
 

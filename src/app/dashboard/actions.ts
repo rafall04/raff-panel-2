@@ -261,19 +261,27 @@ const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
     }
 }
 
-export async function submitReport(prevState: { message: string, success: boolean }, formData: FormData) {
+export async function submitReport(formData: FormData) {
     try {
+        const status = await getDashboardStatus();
+        if (status.activeReport) {
+            return {
+                success: false,
+                message: "You already have an active report. Please wait for it to be resolved before submitting a new one."
+            };
+        }
+
         const session = await getAuthSession();
         const customerInfo = await getCustomerInfo();
         if (!session?.user?.id || !customerInfo) {
-          return { message: 'Authentication or customer data missing.', success: false };
+            return { message: 'Authentication or customer data missing.', success: false };
         }
 
         const report = {
-          phoneNumber: session.user.id,
-          name: customerInfo.name,
-          category: formData.get('category'),
-          reportText: formData.get('description')
+            phoneNumber: session.user.id,
+            name: customerInfo.name,
+            category: formData.get('category'),
+            reportText: formData.get('description')
         };
 
         const headers = await getAuthHeaders();
@@ -284,7 +292,8 @@ export async function submitReport(prevState: { message: string, success: boolea
         });
 
         if (!response.ok) {
-            throw new Error('Failed to submit report.');
+            const errorData = await response.json().catch(() => ({ message: 'Failed to submit report.' }));
+            return { success: false, message: errorData.message || 'An unknown error occurred.' };
         }
 
         revalidatePath('/dashboard');

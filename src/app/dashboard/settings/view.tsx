@@ -41,7 +41,8 @@ export default function SettingsView({
     const [isPackageListOpen, setPackageListOpen] = useState(false);
     const [isPackageConfirmOpen, setPackageConfirmOpen] = useState(false);
 
-    const availablePackages = allPackages.filter(p => p.name !== currentCustomerInfo.packageName);
+    const currentPrice = currentCustomerInfo.monthlyBill;
+    const availablePackages = allPackages.filter(p => parseFloat(p.price) > currentPrice);
 
     const handleUpdateCredentials = async (e: React.FormEvent) => {
         e.preventDefault();

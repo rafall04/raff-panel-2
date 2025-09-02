@@ -5,9 +5,8 @@ import type { SSIDInfo, CustomerInfo, DashboardStatus } from "./actions";
 import { getSSIDInfo, refreshObject } from "./actions";
 
 import CustomerView from "./customer.view";
-import SignalStrengthIcon from "./SignalStrengthIcon";
 import StatusView from "./status.view";
-import { RefreshCw, Users } from 'lucide-react';
+import { RefreshCw, Users, Wifi, BarChart2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -17,15 +16,49 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { toast } from "sonner";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    CartesianGrid
+} from 'recharts';
+
+// New component for the device chart
+const AssociatedDevicesChart = ({ devices }: { devices: SSIDInfo['ssid'][0]['associatedDevices'] }) => {
+    const chartData = devices.map(device => ({
+        name: device.hostName || device.mac || "Unknown Device",
+        signal: device.signal ? parseInt(device.signal.replace(' dBm', '')) : 0,
+    })).filter(device => device.signal < 0); // Filter out devices with no signal data
+
+    if (chartData.length === 0) {
+        return <p className="text-muted-foreground text-center py-8">No devices with signal data to display.</p>
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} interval={0} />
+                <YAxis domain={[-100, 0]} label={{ value: 'Signal (dBm)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip
+                    contentStyle={{
+                        backgroundColor: "hsl(var(--background))",
+                        borderColor: "hsl(var(--border))"
+                    }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                />
+                <Legend />
+                <Bar dataKey="signal" name="Signal Strength (dBm)" fill="hsl(var(--primary))" />
+            </BarChart>
+        </ResponsiveContainer>
+    );
+};
+
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
@@ -61,74 +94,64 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
     };
 
     const isOnline = new Date(ssidInfo.lastInform).getTime() > (new Date().getTime() - 86700000);
+    const allDevices = ssidInfo.ssid.flatMap(s => s.associatedDevices);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
-            <StatusView status={dashboardStatus} />
-
-            {/* Customer Info Card */}
-            <div className="xl:col-span-1">
+        <div className="space-y-6">
+            {/* Top Row: Main Status and Customer Info */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Network Status</CardTitle>
+                            <CardDescription>Hello, {customerInfo?.name || "Customer"}!</CardDescription>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={refreshSsidInfo} disabled={loading}>
+                            <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`}/> Refresh
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div className="p-4 border rounded-lg">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Status</h4>
+                            <div className="flex items-center justify-center gap-2 mt-1">
+                                <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
+                                <p className="text-lg font-bold">{isOnline ? 'Online' : 'Offline'}</p>
+                            </div>
+                        </div>
+                        <div className="p-4 border rounded-lg">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Uptime</h4>
+                            <p className="text-lg font-bold mt-1">{ssidInfo.uptime || "N/A"}</p>
+                        </div>
+                        <div className="p-4 border rounded-lg">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Connected Devices</h4>
+                            <p className="text-lg font-bold mt-1">{allDevices.length}</p>
+                        </div>
+                         <div className="p-4 border rounded-lg">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Active Boost</h4>
+                            <p className="text-lg font-bold mt-1">{dashboardStatus.activeBoost?.profile || 'None'}</p>
+                        </div>
+                    </CardContent>
+                </Card>
                 <CustomerView customerInfo={customerInfo} />
             </div>
 
-            {/* Status Card */}
-            <Card className="xl:col-span-2">
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <CardTitle>Device Status</CardTitle>
-                            <CardDescription>Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
-                            <span className="font-medium">{isOnline ? 'Online' : 'Offline'}</span>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Uptime: {ssidInfo.uptime || "Not Available"}</p>
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                    <Button variant="outline" onClick={refreshSsidInfo} disabled={loading}>
-                        <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`}/> Refresh
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            {/* Associated Devices Table Card */}
-            <Card className="md:col-span-2 xl:col-span-3">
-                <CardHeader>
-                    <CardTitle className="flex items-center"><Users className="mr-2"/>Associated Devices</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Host Name</TableHead>
-                                <TableHead>IP Address</TableHead>
-                                <TableHead>MAC Address</TableHead>
-                                <TableHead>Signal</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {ssidInfo.ssid.flatMap(s => s.associatedDevices).map((device, i) => (
-                                <TableRow key={i}>
-                                    <TableCell>{device.hostName || "N/A"}</TableCell>
-                                    <TableCell>{device.ip || "N/A"}</TableCell>
-                                    <TableCell>{device.mac || "N/A"}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <SignalStrengthIcon signalDbm={device.signal ? parseInt(device.signal.replace(' dBm', '')) : null} />
-                                            <span>{device.signal || "N/A"}</span>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            {/* Second Row: Status Overview and Devices Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center"><BarChart2 className="mr-2"/>Associated Devices Signal Strength</CardTitle>
+                            <CardDescription>Signal strength of currently connected devices.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AssociatedDevicesChart devices={allDevices} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-1">
+                     <StatusView status={dashboardStatus} />
+                </div>
+            </div>
         </div>
     );
 }

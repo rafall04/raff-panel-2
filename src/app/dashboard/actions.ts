@@ -82,6 +82,7 @@ export interface Package {
     name: string;
     price: string;
     profile: string;
+    speedOnDemand: boolean;
 }
 
 export async function getAvailablePackages(): Promise<Package[]> {

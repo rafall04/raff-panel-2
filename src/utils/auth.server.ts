@@ -1,20 +1,32 @@
 "use server"
 
 export const requestOtp = async (phoneNumber: string) => {
-    const req = await fetch(`${process.env.API_URL}/api/otp`, {
-        method: 'POST',
-        body: JSON.stringify({
-            phoneNumber
-        }),
-        headers: {
-            'Content-Type': 'application/json'
+    try {
+        const req = await fetch(`${process.env.API_URL}/api/auth/otp/request`, {
+            method: 'POST',
+            body: JSON.stringify({
+                phoneNumber
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await req.json();
+        return {
+            ok: req.ok,
+            message: data.message
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            message: 'An unexpected error occurred.'
         }
-    })
-    return req;
+    }
 }
 
 export const verify = async (phoneNumber: string, otp: string) => {
-    const req =  await fetch(`${process.env.API_URL}/api/otpverify`, {
+    const req =  await fetch(`${process.env.API_URL}/api/auth/otp/verify`, {
         method: 'POST',
         body: JSON.stringify({
             phoneNumber,
@@ -35,7 +47,7 @@ export const verify = async (phoneNumber: string, otp: string) => {
 }
 
 export const verifyPassword = async (username: string, password: string) => {
-    const req =  await fetch(`${process.env.API_URL}/api/customer/login`, {
+    const req =  await fetch(`${process.env.API_URL}/api/auth/login`, {
         method: 'POST',
         body: JSON.stringify({
             username,

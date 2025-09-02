@@ -47,22 +47,16 @@ export default function Login() {
         }
         setLoading(true);
         setAlertMessage('');
-        try {
-            const response = await requestOtp(phoneNumber);
-            if (response.ok) {
-                setOtpSent(true);
-                setAlertMessage('OTP has been sent to your WhatsApp.');
-            } else {
-                try {
-                    const body = await response.json();
-                    setAlertMessage(body.message || 'Failed to send OTP. Please try again.');
-                } catch {
-                    setAlertMessage('Failed to send OTP. Please check the number and try again.');
-                }
-            }
-        } catch {
-            setAlertMessage('An error occurred. Please try again.');
+
+        const response = await requestOtp(phoneNumber);
+
+        if (response.ok) {
+            setOtpSent(true);
+            setAlertMessage(response.message || 'OTP has been sent to your WhatsApp.');
+        } else {
+            setAlertMessage(response.message || 'Failed to send OTP. Please try again.');
         }
+
         setLoading(false);
     };
 

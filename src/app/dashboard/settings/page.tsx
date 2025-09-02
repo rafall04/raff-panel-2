@@ -1,4 +1,4 @@
-import { getAvailablePackages, getCustomerInfo } from "../actions";
+import { getBoostPackages, getCustomerInfo } from "../actions";
 import SettingsView from "./view";
 
 export const dynamic = 'force-dynamic';
@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage() {
     // Fetch all data concurrently for efficiency
     const [packages, customerInfo] = await Promise.all([
-        getAvailablePackages(),
+        getBoostPackages(),
         getCustomerInfo()
     ]);
 

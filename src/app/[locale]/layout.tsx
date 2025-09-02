@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   description: "RAF CYBER NET Wifi Portal",
 };
 
+export function generateStaticParams() {
+  return [{ locale: "en" }, { locale: "id" }];
+}
+
 export default function LocaleLayout({
   children,
   params: { locale },

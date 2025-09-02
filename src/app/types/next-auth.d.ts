@@ -12,6 +12,7 @@ declare module 'next-auth/jwt' {
     id: string;
     deviceId: string;
     backendToken: string;
+    userData: unknown;
   }
 }
 
@@ -24,6 +25,7 @@ declare module 'next-auth' {
     id: string;
     deviceId: string;
     backendToken: string;
+    userData: unknown;
   }
 
   /**
@@ -34,6 +36,7 @@ declare module 'next-auth' {
       id: string;
       deviceId: string;
       backendToken: string;
+      userData: unknown;
     };
   }
 }

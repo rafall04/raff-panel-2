@@ -33,6 +33,7 @@ export const authOptions: NextAuthOptions = {
                     id: credentials.phoneNumber,
                     deviceId: r.user.deviceId,
                     backendToken: r.token,
+                    userData: r.user,
                 };
             },
         }),
@@ -58,11 +59,15 @@ export const authOptions: NextAuthOptions = {
                 if (!r.user) {
                     throw new Error("Authentication failed: User data not received from backend.");
                 }
+                if (!r.user.phoneNumber) {
+                    throw new Error("Authentication failed: User data from backend did not include a phone number.");
+                }
 
                 return {
-                    id: credentials.username,
+                    id: r.user.phoneNumber,
                     deviceId: r.user.deviceId,
                     backendToken: r.token,
+                    userData: r.user,
                 };
             }
         })
@@ -81,6 +86,7 @@ export const authOptions: NextAuthOptions = {
                 token.id = user.id;
                 token.deviceId = user.deviceId;
                 token.backendToken = user.backendToken;
+                token.userData = user.userData;
             }
             return token;
         },
@@ -88,6 +94,7 @@ export const authOptions: NextAuthOptions = {
             session.user.id = token.id;
             session.user.deviceId = token.deviceId;
             session.user.backendToken = token.backendToken;
+            session.user.userData = token.userData;
             return session;
         }
     }

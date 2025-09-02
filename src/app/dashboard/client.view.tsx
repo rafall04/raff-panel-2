@@ -18,9 +18,7 @@ import {
 import { toast } from "sonner";
 import AssociatedDevicesTable from "./associated-devices-table";
 import AnnouncementDisplay from "./announcement-display";
-import AnnouncementForm from "./announcement-form";
 import NewsDisplay from "./news-display";
-import NewsForm from "./news-form";
 
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
@@ -126,17 +124,6 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
                     <NewsDisplay />
                 </CardContent>
             </Card>
-
-            {/* Admin Section */}
-            {/* TODO: Add authorization check here. This section should only be visible to admin users. */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <AnnouncementForm />
-                </Card>
-                <Card>
-                    <NewsForm />
-                </Card>
-            </div>
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { rebootRouter, requestPackageChange, updateCredentials } from '../actions';
 import type { CustomerInfo, Package } from '../actions';
@@ -11,8 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
-import { LanguageSwitcher } from '@/components/language-switcher';
 
 // Helper to format currency
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -28,23 +26,7 @@ export default function SettingsView({
     allPackages: Package[];
     currentCustomerInfo: CustomerInfo;
 }) {
-    const t = useTranslations('Settings');
     const [isLoadingReboot, setIsLoadingReboot] = useState(false);
-    const [names, setNames] = useState<{id: number, name: string}[]>([]);
-
-    useEffect(() => {
-        const fetchNames = async () => {
-            try {
-                const response = await fetch('/api/names');
-                const data = await response.json();
-                setNames(data);
-            } catch (error) {
-                console.error("Failed to fetch names:", error);
-            }
-        };
-
-        fetchNames();
-    }, []);
     const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
     const [isChangeLoading, setIsChangeLoading] = useState(false);
 
@@ -149,13 +131,13 @@ export default function SettingsView({
         <div>
             <h1 className="text-3xl font-bold mb-6 flex items-center">
                 <Settings className="mr-3"/>
-                {t('title')}
+                Settings & Actions
             </h1>
 
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('subscriptionTitle')}</CardTitle>
+                        <CardTitle>Your Subscription</CardTitle>
                     </CardHeader>
                     <CardContent className="flex justify-between items-center">
                         <div>
@@ -164,7 +146,7 @@ export default function SettingsView({
                         </div>
                         <Dialog open={isPackageListOpen} onOpenChange={setPackageListOpen}>
                             <DialogTrigger asChild>
-                                <Button variant="outline"><PackageCheck size={16} className="mr-2"/>{t('changePackage')}</Button>
+                                <Button variant="outline"><PackageCheck size={16} className="mr-2"/> Change Package</Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[625px]">
                                 <DialogHeader>
@@ -199,42 +181,33 @@ export default function SettingsView({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('language')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <LanguageSwitcher />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t('accountCredentialsTitle')}</CardTitle>
-                        <CardDescription>{t('accountCredentialsDescription')}</CardDescription>
+                        <CardTitle>Account Credentials</CardTitle>
+                        <CardDescription>Update your username or password. Requires current password for verification.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleUpdateCredentials} className="space-y-4">
                              <div className="space-y-2">
-                                <Label htmlFor="current-password">{t('currentPasswordLabel')}</Label>
-                                <Input id="current-password" type="password" placeholder={t('currentPasswordPlaceholder')} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required/>
+                                <Label htmlFor="current-password">Current Password (Required)</Label>
+                                <Input id="current-password" type="password" placeholder="Enter your current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required/>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="new-username">{t('newUsernameLabel')}</Label>
-                                <Input id="new-username" type="text" placeholder={t('newUsernamePlaceholder')} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+                                <Label htmlFor="new-username">New Username</Label>
+                                <Input id="new-username" type="text" placeholder="Leave blank to keep unchanged" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="new-password">{t('newPasswordLabel')}</Label>
-                                    <Input id="new-password" type="password" placeholder={t('newPasswordPlaceholder')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                                    <Label htmlFor="new-password">New Password</Label>
+                                    <Input id="new-password" type="password" placeholder="Leave blank to keep unchanged" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="confirm-password">{t('confirmPasswordLabel')}</Label>
-                                    <Input id="confirm-password" type="password" placeholder={t('confirmPasswordPlaceholder')} value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
+                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                    <Input id="confirm-password" type="password" placeholder="Confirm new password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
                                 </div>
                             </div>
                             <div className="flex justify-end">
                                 <Button type="submit" disabled={isCredentialUpdateLoading}>
                                     {isCredentialUpdateLoading ? <LoaderCircle className="animate-spin mr-2" /> : <Check className="mr-2" />}
-                                    {t('updateCredentialsButton')}
+                                    Update Credentials
                                 </Button>
                             </div>
                         </form>
@@ -243,30 +216,17 @@ export default function SettingsView({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('name')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ul>
-                            {names.map(name => (
-                                <li key={name.id}>{name.name}</li>
-                            ))}
-                        </ul>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t('deviceActionsTitle')}</CardTitle>
-                        <CardDescription>{t('deviceActionsDescription')}</CardDescription>
+                        <CardTitle>Device & Account Actions</CardTitle>
+                        <CardDescription>Perform actions on your account or device.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-4">
                         <DialogTrigger asChild>
-                            <Button variant="outline"><MessageSquareWarning size={16} className="mr-2"/> {t('reportIssue')}</Button>
+                            <Button variant="outline"><MessageSquareWarning size={16} className="mr-2"/> Report an Issue</Button>
                         </DialogTrigger>
                         <Dialog open={isRebootDialogOpen} onOpenChange={setRebootDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="outline" className="text-amber-500 border-amber-500/50 hover:bg-amber-500/10 hover:text-amber-600">
-                                    <Power size={16} className="mr-2"/> {t('rebootRouter')}
+                                    <Power size={16} className="mr-2"/> Reboot Router
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
@@ -284,7 +244,7 @@ export default function SettingsView({
                             </DialogContent>
                         </Dialog>
                         <Button onClick={handleLogout} variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600 ml-auto">
-                            <LogOut size={16} className="mr-2"/> {t('logout')}
+                            <LogOut size={16} className="mr-2"/> Logout
                         </Button>
                     </CardContent>
                 </Card>

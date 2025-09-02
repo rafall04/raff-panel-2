@@ -8,6 +8,24 @@ import CustomerView from "./customer.view";
 import SignalStrengthIcon from "./SignalStrengthIcon";
 import StatusView from "./status.view";
 import { RefreshCw, Users } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { toast } from "sonner";
 
 export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboardStatus }: { ssidInfo: SSIDInfo, customerInfo: CustomerInfo | null, dashboardStatus: DashboardStatus }) {
     const [ssidInfo, setSSIDInfo] = useState<SSIDInfo>(initialSsidInfo);
@@ -26,14 +44,17 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
 
     const refreshSsidInfo = async () => {
         setLoading(true);
+        toast.info("Refreshing data...");
         try {
             await refreshObject();
             const newSsidInfo = await getSSIDInfo();
             if (newSsidInfo) {
                 setSSIDInfo(newSsidInfo);
+                toast.success("Data refreshed successfully!");
             }
         } catch (error) {
             console.error("Failed to refresh SSID info:", error);
+            toast.error("Failed to refresh data.");
         } finally {
             setLoading(false);
         }
@@ -42,81 +63,72 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
     const isOnline = new Date(ssidInfo.lastInform).getTime() > (new Date().getTime() - 86700000);
 
     return (
-        <>
-            {loading && (
-                <div className="toast toast-top toast-center z-[999]">
-                    <div className="alert alert-info bg-primary text-white">
-                        <RefreshCw className="animate-spin" />
-                        <span>Loading...</span>
-                    </div>
-                </div>
-            )}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <StatusView status={dashboardStatus} />
 
-                <StatusView status={dashboardStatus} />
-
-                {/* Customer Info Card */}
-                <div className="xl:col-span-1">
-                    <CustomerView customerInfo={customerInfo} />
-                </div>
-
-                {/* Status Card */}
-                <div className="card bg-white/10 border border-white/20 shadow-2xl xl:col-span-2">
-                    <div className="card-body">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h2 className="card-title text-white">Device Status</h2>
-                                <p className="text-sm text-gray-400">Uptime: {ssidInfo.uptime || "Not Available"}</p>
-                                <p className="text-sm text-gray-400">Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400' : 'bg-red-500'}`}></div>
-                                <span className="text-white">{isOnline ? 'Online' : 'Offline'}</span>
-                            </div>
-                        </div>
-                        <div className="card-actions justify-end mt-4">
-                            <button className="btn btn-outline text-white hover:bg-primary" onClick={refreshSsidInfo} disabled={loading}>
-                                <RefreshCw size={16} className={loading ? 'animate-spin' : ''}/> Refresh
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Associated Devices Table Card */}
-                <div className="card bg-white/10 border border-white/20 shadow-2xl md:col-span-2 xl:col-span-3">
-                    <div className="card-body">
-                        <h1 className="card-title text-white flex items-center"><Users className="mr-2"/>Associated Devices</h1>
-                        <div className="overflow-x-auto">
-                            <table className="table w-full">
-                                <thead className="text-white/80">
-                                    <tr>
-                                        <th className="bg-transparent">Host Name</th>
-                                        <th className="bg-transparent">IP Address</th>
-                                        <th className="bg-transparent">MAC Address</th>
-                                        <th className="bg-transparent">Signal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {ssidInfo.ssid.flatMap(s => s.associatedDevices).map((device, i) => (
-                                        <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                                            <td>{device.hostName || "N/A"}</td>
-                                            <td>{device.ip || "N/A"}</td>
-                                            <td>{device.mac || "N/A"}</td>
-                                            <td>
-                                                <div className="flex items-center gap-2">
-                                                    <SignalStrengthIcon signalDbm={device.signal ? parseInt(device.signal.replace(' dBm', '')) : null} />
-                                                    <span>{device.signal || "N/A"}</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            {/* Customer Info Card */}
+            <div className="xl:col-span-1">
+                <CustomerView customerInfo={customerInfo} />
             </div>
-        </>
+
+            {/* Status Card */}
+            <Card className="xl:col-span-2">
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>Device Status</CardTitle>
+                            <CardDescription>Last Update: {new Date(ssidInfo.lastInform).toLocaleString()}</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 animate-glow-green' : 'bg-red-500 animate-glow-red'}`}></div>
+                            <span className="font-medium">{isOnline ? 'Online' : 'Offline'}</span>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">Uptime: {ssidInfo.uptime || "Not Available"}</p>
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                    <Button variant="outline" onClick={refreshSsidInfo} disabled={loading}>
+                        <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`}/> Refresh
+                    </Button>
+                </CardFooter>
+            </Card>
+
+            {/* Associated Devices Table Card */}
+            <Card className="md:col-span-2 xl:col-span-3">
+                <CardHeader>
+                    <CardTitle className="flex items-center"><Users className="mr-2"/>Associated Devices</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Host Name</TableHead>
+                                <TableHead>IP Address</TableHead>
+                                <TableHead>MAC Address</TableHead>
+                                <TableHead>Signal</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {ssidInfo.ssid.flatMap(s => s.associatedDevices).map((device, i) => (
+                                <TableRow key={i}>
+                                    <TableCell>{device.hostName || "N/A"}</TableCell>
+                                    <TableCell>{device.ip || "N/A"}</TableCell>
+                                    <TableCell>{device.mac || "N/A"}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <SignalStrengthIcon signalDbm={device.signal ? parseInt(device.signal.replace(' dBm', '')) : null} />
+                                            <span>{device.signal || "N/A"}</span>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
     );
 }

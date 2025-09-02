@@ -3,7 +3,11 @@
 import { useState } from "react";
 import type { BoostPackage, CustomerInfo } from "../actions";
 import { requestSpeedBoost } from "../actions";
-import { ArrowRight, Check, LoaderCircle, Rocket, X } from "lucide-react";
+import { ArrowRight, Check, LoaderCircle, Rocket } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from 'sonner';
 
 // Helper to format currency
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -26,114 +30,104 @@ export default function SpeedBoostView({
 }) {
     const [selectedBoost, setSelectedBoost] = useState<{ targetPackage: BoostPackage; duration: string; price: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [notification, setNotification] = useState<{ message: string; success: boolean } | null>(null);
+    const [isConfirmOpen, setConfirmOpen] = useState(false);
 
     const currentPrice = parseFloat(currentCustomerInfo.monthlyBill.toString());
     const availableUpgrades = allPackages.filter(p => parseFloat(p.price) > currentPrice);
 
     const handleBoostClick = (targetPackage: BoostPackage, duration: string, price: string) => {
         setSelectedBoost({ targetPackage, duration, price });
-        (document.getElementById("confirmation_modal") as HTMLDialogElement)?.showModal();
+        setConfirmOpen(true);
     };
 
     const handleConfirmBoost = async () => {
         if (!selectedBoost) return;
 
         setIsLoading(true);
-        setNotification(null);
+        const promise = requestSpeedBoost(selectedBoost.targetPackage.name, selectedBoost.duration);
 
-        const result = await requestSpeedBoost(selectedBoost.targetPackage.name, selectedBoost.duration);
-
-        setNotification(result);
-        setIsLoading(false);
-        setSelectedBoost(null);
-        (document.getElementById("confirmation_modal") as HTMLDialogElement)?.close();
-
-        // Auto-hide notification after 5 seconds
-        setTimeout(() => setNotification(null), 5000);
+        toast.promise(promise, {
+            loading: 'Activating boost...',
+            success: (result) => {
+                setConfirmOpen(false);
+                return result.message;
+            },
+            error: (err) => err.message,
+            finally: () => {
+                setIsLoading(false);
+                setSelectedBoost(null);
+            }
+        });
     };
 
     return (
         <div>
-            {notification && (
-                <div className="toast toast-bottom toast-center z-[999]">
-                    <div className={`alert ${notification.success ? 'alert-success' : 'alert-error'}`}>
-                        <span>{notification.message}</span>
-                    </div>
-                </div>
-            )}
-
-            <dialog id="confirmation_modal" className="modal">
-                <div className="modal-box bg-white/10 backdrop-blur-lg border border-white/20">
-                    <h3 className="font-bold text-lg text-white">Confirm Speed Boost</h3>
-                    {selectedBoost && (
-                        <div className="py-4 text-white/80">
-                            <p>You are about to activate a speed boost:</p>
-                            <ul className="list-disc list-inside my-2">
-                                <li><b>Target Speed:</b> {selectedBoost.targetPackage.profile}</li>
-                                <li><b>Duration:</b> {formatDuration(selectedBoost.duration)}</li>
-                                <li><b>Price:</b> {currencyFormatter.format(parseFloat(selectedBoost.price))}</li>
-                            </ul>
-                            <p>Are you sure you want to proceed?</p>
-                        </div>
-                    )}
-                    <div className="modal-action">
-                        <button onClick={handleConfirmBoost} className="btn btn-primary" disabled={isLoading}>
-                            {isLoading ? <LoaderCircle className="animate-spin"/> : <Check className="mr-2"/>}
-                            Confirm & Activate
-                        </button>
-                        <form method="dialog">
-                            <button className="btn"><X className="mr-2"/>Cancel</button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
-
-            <h1 className="text-3xl font-bold text-white mb-2 flex items-center"><Rocket className="mr-3"/>Speed on Demand</h1>
-            <p className="text-gray-400 mb-6">Upgrade your speed temporarily to handle heavy tasks.</p>
+            <h1 className="text-3xl font-bold mb-2 flex items-center"><Rocket className="mr-3"/>Speed on Demand</h1>
+            <p className="text-muted-foreground mb-6">Upgrade your speed temporarily to handle heavy tasks.</p>
 
             <div className="space-y-4 mb-8">
-                <h2 className="text-xl font-semibold text-white">Your Current Package</h2>
-                <div className="card card-compact bg-white/5 border border-white/10">
-                    <div className="card-body">
-                        <h3 className="card-title text-primary">{currentCustomerInfo.packageName}</h3>
-                        <p>{currencyFormatter.format(currentCustomerInfo.monthlyBill)} / month</p>
-                    </div>
-                </div>
+                <h2 className="text-xl font-semibold">Your Current Package</h2>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-primary">{currentCustomerInfo.packageName}</CardTitle>
+                        <CardDescription>{currencyFormatter.format(currentCustomerInfo.monthlyBill)} / month</CardDescription>
+                    </CardHeader>
+                </Card>
             </div>
 
             <div>
-                <h2 className="text-xl font-semibold text-white mb-4">Available Speed Boosts</h2>
+                <h2 className="text-xl font-semibold mb-4">Available Speed Boosts</h2>
                 {availableUpgrades.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {availableUpgrades.map(pkg => (
-                            <div key={pkg.name} className="card bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl">
-                                <div className="card-body">
-                                    <h3 className="card-title text-white">Boost to {pkg.profile}</h3>
-                                    <p className="text-sm text-gray-400">Temporarily upgrade to the speed of {pkg.name}</p>
-                                    <div className="space-y-2 mt-4">
-                                        {Object.entries(pkg.speedBoostPrices).map(([duration, price]) => (
-                                            <button
-                                                key={duration}
-                                                onClick={() => handleBoostClick(pkg, duration, price)}
-                                                className="btn btn-outline btn-primary w-full justify-between group"
-                                            >
-                                                <span>Boost for {formatDuration(duration)} - {currencyFormatter.format(parseFloat(price))}</span>
-                                                <ArrowRight className="group-hover:translate-x-1 transition-transform"/>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                            <Card key={pkg.name}>
+                                <CardHeader>
+                                    <CardTitle>Boost to {pkg.profile}</CardTitle>
+                                    <CardDescription>Temporarily upgrade to the speed of {pkg.name}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    {Object.entries(pkg.speedBoostPrices).map(([duration, price]) => (
+                                        <Button
+                                            key={duration}
+                                            onClick={() => handleBoostClick(pkg, duration, price)}
+                                            variant="outline"
+                                            className="w-full justify-between group"
+                                        >
+                                            <span>Boost for {formatDuration(duration)} - {currencyFormatter.format(parseFloat(price))}</span>
+                                            <ArrowRight className="group-hover:translate-x-1 transition-transform h-4 w-4"/>
+                                        </Button>
+                                    ))}
+                                </CardContent>
+                            </Card>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-10">
-                        <p className="text-lg text-gray-300">You are already on the highest tier package.</p>
-                        <p className="text-sm text-gray-500">No speed boosts available.</p>
+                    <div className="text-center py-10 border rounded-lg">
+                        <p className="text-lg text-muted-foreground">You are already on the highest tier package.</p>
+                        <p className="text-sm text-muted-foreground">No speed boosts available.</p>
                     </div>
                 )}
             </div>
+
+            <Dialog open={isConfirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Speed Boost</DialogTitle>
+                        {selectedBoost && (
+                            <DialogDescription>
+                                You are about to activate a boost to <b className="text-primary">{selectedBoost.targetPackage.profile}</b> for {formatDuration(selectedBoost.duration)} at a cost of <b className="text-primary">{currencyFormatter.format(parseFloat(selectedBoost.price))}</b>.
+                            </DialogDescription>
+                        )}
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                        <Button onClick={handleConfirmBoost} disabled={isLoading}>
+                            {isLoading ? <LoaderCircle className="animate-spin mr-2"/> : <Check className="mr-2"/>}
+                            Confirm & Activate
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

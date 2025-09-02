@@ -1,5 +1,7 @@
 import { getSSIDInfo } from "../actions";
-import WifiView from "./view"; // This will be the new client view
+import WifiView from "./view";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -8,12 +10,14 @@ export default async function WifiPage() {
 
     if (!ssidInfo) {
         return (
-            <div className="w-full min-h-[100dvh] flex items-center justify-center p-4">
-                <div className="alert alert-error max-w-lg">
-                    <span>
-                        Error: Could not retrieve device information.
-                    </span>
-                </div>
+            <div className="w-full flex items-center justify-center p-4">
+                <Alert variant="destructive" className="max-w-lg">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                        Could not retrieve device information. Please ensure your environment configuration is correct and try again later.
+                    </AlertDescription>
+                </Alert>
             </div>
         );
     }

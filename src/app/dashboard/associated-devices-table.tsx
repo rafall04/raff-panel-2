@@ -33,7 +33,7 @@ export default function AssociatedDevicesTable({ devices }: AssociatedDevicesTab
                 {devices.map((device, index) => (
                     <TableRow key={device.mac || index}>
                         <TableCell className="font-medium">{device.hostName || "Unknown Device"}</TableCell>
-                        <TableCell>{device.ipAddress || "N/A"}</TableCell>
+                        <TableCell>{device.ip || "N/A"}</TableCell>
                         <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                                 <span>{device.signal || "N/A"}</span>

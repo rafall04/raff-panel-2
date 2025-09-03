@@ -2,6 +2,10 @@ import type { NextAuthOptions } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { verify, verifyPassword } from '@/utils/auth.server';
+
+if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error('FATAL: NEXTAUTH_SECRET environment variable is not set.');
+}
   
 export const authOptions: NextAuthOptions = {
     // adapter: PrismaAdapter(prisma),

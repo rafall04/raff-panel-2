@@ -1,6 +1,13 @@
 "use server"
 
 export const requestOtp = async (phoneNumber: string) => {
+    if (!process.env.API_URL) {
+        console.error("FATAL: API_URL environment variable is not set.");
+        return {
+            ok: false,
+            message: 'Server configuration error: API_URL is not set.'
+        }
+    }
     try {
         const req = await fetch(`${process.env.API_URL}/api/auth/otp/request`, {
             method: 'POST',
@@ -50,6 +57,14 @@ export const verify = async (phoneNumber: string, otp: string) => {
 }
 
 export const verifyPassword = async (username: string, password: string) => {
+    if (!process.env.API_URL) {
+        console.error("FATAL: API_URL environment variable is not set.");
+        return {
+            status: 500,
+            user: null,
+            token: undefined
+        };
+    }
     try {
         const req = await fetch(`${process.env.API_URL}/api/auth/login`, {
             method: 'POST',

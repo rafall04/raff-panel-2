@@ -55,7 +55,7 @@ export const authOptions: NextAuthOptions = {
                 const r = await verifyPassword(credentials.username, credentials.password);
 
                 if (r.status !== 200) {
-                    throw new Error(`Backend returned status ${r.status}.`);
+                    throw new Error(r.message || `Authentication failed. Status: ${r.status}`);
                 }
                 if (!r.token) {
                     throw new Error("Authentication failed: Token not received from backend.");

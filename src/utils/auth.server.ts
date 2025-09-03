@@ -45,13 +45,15 @@ export const verify = async (phoneNumber: string, otp: string) => {
         return {
             status: req.status,
             user: json.user || null,
-            token: json.token || undefined
+            token: json.token || undefined,
+            message: json.message || null
         };
     } catch {
         return {
             status: 500,
             user: null,
-            token: undefined
+            token: undefined,
+            message: "An unexpected error occurred on the server."
         };
     }
 }
@@ -77,13 +79,15 @@ export const verifyPassword = async (username: string, password: string) => {
         return {
             status: req.status,
             user: json.user || null,
-            token: json.token || undefined
+            token: json.token || undefined,
+            message: json.message || null
         };
     } catch {
         return {
             status: 500,
             user: null,
-            token: undefined
+            token: undefined,
+            message: "An unexpected error occurred on the server."
         };
     }
 }

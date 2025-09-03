@@ -21,10 +21,10 @@ export default function DashboardLayout({
   const [companyName, setCompanyName] = useState("Memuat...");
 
   useEffect(() => {
-    fetch('/api/settings')
+    fetch('/api/wifi-name')
       .then(res => res.json())
       .then(data => {
-        setCompanyName(data.companyName);
+        setCompanyName(data.wifiName);
       });
   }, []);
 
@@ -50,10 +50,10 @@ export default function DashboardLayout({
       <DialogContent>
           <DialogHeader>
               <DialogTitle className="flex items-center">
-                  <MessageSquareWarning className="mr-2"/>Report an Issue
+                  <MessageSquareWarning className="mr-2"/>Laporkan Masalah
               </DialogTitle>
               <DialogDescription>
-                  Please fill out the form below to report an issue with your connection.
+                  Mohon isi formulir di bawah ini untuk melaporkan masalah terkait koneksi Anda.
               </DialogDescription>
           </DialogHeader>
           <div className="py-4">

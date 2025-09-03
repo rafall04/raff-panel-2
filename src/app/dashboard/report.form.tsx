@@ -18,7 +18,7 @@ export default function ReportForm() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!category || !description) {
-            toast.error("Please fill out all fields.");
+            toast.error("Mohon isi semua kolom yang diperlukan.");
             return;
         }
 
@@ -32,14 +32,14 @@ export default function ReportForm() {
             const result = await submitReport(formData);
 
             if (result.success) {
-                toast.success(result.message || "Report submitted successfully!");
+                toast.success(result.message || "Laporan berhasil dikirim!");
                 setCategory('');
                 setDescription('');
             } else {
-                toast.error(result.message || "An unknown error occurred.");
+                toast.error(result.message || "Terjadi kesalahan yang tidak diketahui.");
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
+            toast.error(error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.");
         } finally {
             setIsLoading(false);
         }
@@ -50,25 +50,25 @@ export default function ReportForm() {
             <Card className="border-none shadow-none">
                 <CardContent className="space-y-4 pt-6">
                     <div className="space-y-2">
-                        <Label htmlFor="category">Issue Category</Label>
+                        <Label htmlFor="category">Kategori Masalah</Label>
                         <Select name="category" required onValueChange={setCategory} value={category}>
                             <SelectTrigger id="category" className="w-full">
-                                <SelectValue placeholder="Select a category" />
+                                <SelectValue placeholder="Pilih kategori" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Slow Connection">Slow Connection</SelectItem>
-                                <SelectItem value="No Connection">No Connection</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
+                                <SelectItem value="Slow Connection">Koneksi Lambat</SelectItem>
+                                <SelectItem value="No Connection">Tidak Ada Koneksi</SelectItem>
+                                <SelectItem value="Other">Lainnya</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                        <Label htmlFor="description">Deskripsi</Label>
                         <Textarea
                             id="description"
                             name="description"
                             required
-                            placeholder="Please describe the issue in detail."
+                            placeholder="Jelaskan masalah yang Anda alami secara detail."
                             className="resize-none"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -78,7 +78,7 @@ export default function ReportForm() {
                 <CardFooter>
                     <Button type="submit" disabled={isLoading} className="w-full">
                         {isLoading ? <LoaderCircle className="animate-spin mr-2" /> : <Send className="mr-2" />}
-                        {isLoading ? 'Sending...' : 'Send Report'}
+                        {isLoading ? 'Mengirim...' : 'Kirim Laporan'}
                     </Button>
                 </CardFooter>
             </Card>

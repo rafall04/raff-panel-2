@@ -47,15 +47,15 @@ export default function SettingsView({
         e.preventDefault();
 
         if (newPassword !== confirmNewPassword) {
-            toast.error("New passwords do not match!");
+            toast.error("Kata sandi baru tidak cocok!");
             return;
         }
         if (!currentPassword) {
-            toast.error("Current password is required to make changes.");
+            toast.error("Kata sandi saat ini diperlukan untuk membuat perubahan.");
             return;
         }
         if (!newUsername && !newPassword) {
-            toast.info("You must provide either a new username or a new password.");
+            toast.info("Anda harus menyediakan nama pengguna baru atau kata sandi baru.");
             return;
         }
 
@@ -63,21 +63,21 @@ export default function SettingsView({
         const promise = updateCredentials(currentPassword, newUsername || undefined, newPassword || undefined);
 
         toast.promise(promise, {
-            loading: 'Updating credentials...',
+            loading: 'Memperbarui kredensial...',
             success: (result) => {
                 setNewUsername('');
                 setNewPassword('');
                 setConfirmNewPassword('');
                 setCurrentPassword('');
-                return result.message || 'Credentials updated successfully!';
+                return result.message || 'Kredensial berhasil diperbarui!';
             },
-            error: (err) => err.message || 'Failed to update credentials.',
+            error: (err) => err.message || 'Gagal memperbarui kredensial.',
             finally: () => setIsCredentialUpdateLoading(false)
         });
     };
 
     const handleLogout = () => {
-        toast("Logging out...");
+        toast("Keluar...");
         signOut({ callbackUrl: '/login' });
     };
 
@@ -85,10 +85,10 @@ export default function SettingsView({
         setIsLoadingReboot(true);
         try {
             await rebootRouter();
-            toast.success("Reboot command sent successfully!");
+            toast.success("Perintah reboot berhasil dikirim!");
         } catch (error) {
-            toast.error("Failed to send reboot command.");
-            console.error("Failed to reboot router:", error);
+            toast.error("Gagal mengirim perintah reboot.");
+            console.error("Gagal me-reboot router:", error);
         } finally {
             setIsLoadingReboot(false);
             setRebootDialogOpen(false);
@@ -109,14 +109,14 @@ export default function SettingsView({
             setPackageConfirmOpen(false); // Close confirmation dialog regardless of outcome
 
             if (result.success) {
-                toast.success(result.message || "Package change requested successfully!");
+                toast.success(result.message || "Permintaan perubahan paket berhasil!");
                 setPackageListOpen(false); // Close package list only on success
             } else {
-                toast.error(result.message || "An unknown error occurred.");
+                toast.error(result.message || "Terjadi kesalahan yang tidak diketahui.");
             }
         } catch (error) {
             setPackageConfirmOpen(false);
-            toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
+            toast.error(error instanceof Error ? error.message : "Terjadi kesalahan tak terduga.");
         } finally {
             setIsChangeLoading(false);
             setSelectedPackage(null);
@@ -127,27 +127,27 @@ export default function SettingsView({
         <div>
             <h1 className="text-3xl font-bold mb-6 flex items-center">
                 <Settings className="mr-3"/>
-                Settings & Actions
+                Pengaturan & Tindakan
             </h1>
 
             <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Your Subscription</CardTitle>
+                        <CardTitle>Langganan Anda</CardTitle>
                     </CardHeader>
                     <CardContent className="flex justify-between items-center">
                         <div>
                             <p className="font-semibold text-primary">{currentCustomerInfo.packageName}</p>
-                            <p className="text-muted-foreground">{currencyFormatter.format(currentCustomerInfo.monthlyBill)} / month</p>
+                            <p className="text-muted-foreground">{currencyFormatter.format(currentCustomerInfo.monthlyBill)} / bulan</p>
                         </div>
                         <Dialog open={isPackageListOpen} onOpenChange={setPackageListOpen}>
                             <DialogTrigger asChild>
-                                <Button variant="outline"><PackageCheck size={16} className="mr-2"/> Change Package</Button>
+                                <Button variant="outline"><PackageCheck size={16} className="mr-2"/> Ubah Paket</Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[625px]">
                                 <DialogHeader>
-                                    <DialogTitle>Change Subscription Package</DialogTitle>
-                                    <DialogDescription>Select a new package. Changes will be reviewed by an admin.</DialogDescription>
+                                    <DialogTitle>Ubah Paket Langganan</DialogTitle>
+                                    <DialogDescription>Pilih paket baru. Perubahan akan ditinjau oleh admin.</DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     {availablePackages.length > 0 ? (
@@ -156,18 +156,18 @@ export default function SettingsView({
                                                 <Card key={pkg.name}>
                                                     <CardHeader>
                                                         <CardTitle>{pkg.profile}</CardTitle>
-                                                        <CardDescription>{currencyFormatter.format(parseFloat(pkg.price))} / month</CardDescription>
+                                                        <CardDescription>{currencyFormatter.format(parseFloat(pkg.price))} / bulan</CardDescription>
                                                     </CardHeader>
                                                     <CardFooter>
                                                          <Button onClick={() => handleSelectPackage(pkg)} size="sm" className="w-full group">
-                                                            Request Change <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform"/>
+                                                            Ajukan Perubahan <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform"/>
                                                         </Button>
                                                     </CardFooter>
                                                 </Card>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-center text-muted-foreground py-4">No other packages are available at the moment.</p>
+                                        <p className="text-center text-muted-foreground py-4">Tidak ada paket lain yang tersedia saat ini.</p>
                                     )}
                                 </div>
                             </DialogContent>
@@ -177,33 +177,33 @@ export default function SettingsView({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Account Credentials</CardTitle>
-                        <CardDescription>Update your username or password. Requires current password for verification.</CardDescription>
+                        <CardTitle>Kredensial Akun</CardTitle>
+                        <CardDescription>Perbarui nama pengguna atau kata sandi Anda. Memerlukan kata sandi saat ini untuk verifikasi.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleUpdateCredentials} className="space-y-4">
                              <div className="space-y-2">
-                                <Label htmlFor="current-password">Current Password (Required)</Label>
-                                <Input id="current-password" type="password" placeholder="Enter your current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required/>
+                                <Label htmlFor="current-password">Kata Sandi Saat Ini (Wajib)</Label>
+                                <Input id="current-password" type="password" placeholder="Masukkan kata sandi Anda saat ini" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required/>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="new-username">New Username</Label>
-                                <Input id="new-username" type="text" placeholder="Leave blank to keep unchanged" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+                                <Label htmlFor="new-username">Nama Pengguna Baru</Label>
+                                <Input id="new-username" type="text" placeholder="Biarkan kosong untuk tidak mengubah" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="new-password">New Password</Label>
-                                    <Input id="new-password" type="password" placeholder="Leave blank to keep unchanged" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                                    <Label htmlFor="new-password">Kata Sandi Baru</Label>
+                                    <Input id="new-password" type="password" placeholder="Biarkan kosong untuk tidak mengubah" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                    <Input id="confirm-password" type="password" placeholder="Confirm new password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
+                                    <Label htmlFor="confirm-password">Konfirmasi Kata Sandi Baru</Label>
+                                    <Input id="confirm-password" type="password" placeholder="Konfirmasi kata sandi baru" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
                                 </div>
                             </div>
                             <div className="flex justify-end">
                                 <Button type="submit" disabled={isCredentialUpdateLoading}>
                                     {isCredentialUpdateLoading ? <LoaderCircle className="animate-spin mr-2" /> : <Check className="mr-2" />}
-                                    Update Credentials
+                                    Perbarui Kredensial
                                 </Button>
                             </div>
                         </form>
@@ -212,12 +212,12 @@ export default function SettingsView({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Device & Account Actions</CardTitle>
-                        <CardDescription>Perform actions on your account or device.</CardDescription>
+                        <CardTitle>Tindakan Perangkat & Akun</CardTitle>
+                        <CardDescription>Lakukan tindakan pada akun atau perangkat Anda.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-4">
                         <DialogTrigger asChild>
-                            <Button variant="outline"><MessageSquareWarning size={16} className="mr-2"/> Report an Issue</Button>
+                            <Button variant="outline"><MessageSquareWarning size={16} className="mr-2"/> Laporkan Masalah</Button>
                         </DialogTrigger>
                         <Dialog open={isRebootDialogOpen} onOpenChange={setRebootDialogOpen}>
                             <DialogTrigger asChild>
@@ -227,20 +227,20 @@ export default function SettingsView({
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Are you sure?</DialogTitle>
-                                    <DialogDescription>The router will restart. This may take a few minutes.</DialogDescription>
+                                    <DialogTitle>Apakah Anda yakin?</DialogTitle>
+                                    <DialogDescription>Router akan dimulai ulang. Ini mungkin memakan waktu beberapa menit.</DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
-                                    <Button variant="ghost" onClick={() => setRebootDialogOpen(false)}>Cancel</Button>
+                                    <Button variant="ghost" onClick={() => setRebootDialogOpen(false)}>Batal</Button>
                                     <Button variant="destructive" onClick={handleReboot} disabled={isLoadingReboot}>
                                         {isLoadingReboot ? <LoaderCircle className="animate-spin mr-2"/> : <Check className="mr-2"/>}
-                                        Confirm Reboot
+                                        Konfirmasi Reboot
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
                         <Button onClick={handleLogout} variant="outline" className="text-red-500 border-red-500/50 hover:bg-red-500/10 hover:text-red-600 ml-auto">
-                            <LogOut size={16} className="mr-2"/> Logout
+                            <LogOut size={16} className="mr-2"/> Keluar
                         </Button>
                     </CardContent>
                 </Card>
@@ -248,18 +248,18 @@ export default function SettingsView({
                  <Dialog open={isPackageConfirmOpen} onOpenChange={setPackageConfirmOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Confirm Package Change</DialogTitle>
+                            <DialogTitle>Konfirmasi Perubahan Paket</DialogTitle>
                             {selectedPackage && (
                                 <DialogDescription>
-                                    You are requesting to change your package to: <b>{selectedPackage.name} ({selectedPackage.profile})</b> for <b>{currencyFormatter.format(parseFloat(selectedPackage.price))}</b>. This request will be sent for admin approval.
+                                    Anda mengajukan perubahan paket ke: <b>{selectedPackage.name} ({selectedPackage.profile})</b> seharga <b>{currencyFormatter.format(parseFloat(selectedPackage.price))}</b>. Permintaan ini akan dikirim untuk persetujuan admin.
                                 </DialogDescription>
                             )}
                         </DialogHeader>
                         <DialogFooter>
-                            <Button variant="ghost" onClick={() => setPackageConfirmOpen(false)}>Cancel</Button>
+                            <Button variant="ghost" onClick={() => setPackageConfirmOpen(false)}>Batal</Button>
                             <Button onClick={handleConfirmPackageChange} disabled={isChangeLoading}>
                                 {isChangeLoading ? <LoaderCircle className="animate-spin mr-2"/> : <Check className="mr-2"/>}
-                                Confirm Request
+                                Konfirmasi Permintaan
                             </Button>
                         </DialogFooter>
                     </DialogContent>

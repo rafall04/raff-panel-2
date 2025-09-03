@@ -267,7 +267,7 @@ export async function submitReport(formData: FormData) {
         if (status.activeReport) {
             return {
                 success: false,
-                message: "You already have an active report. Please wait for it to be resolved before submitting a new one."
+                message: "Anda sudah memiliki laporan aktif. Mohon tunggu hingga laporan tersebut diselesaikan sebelum mengirim yang baru."
             };
         }
 

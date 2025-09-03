@@ -399,6 +399,24 @@ export async function requestPackageChange(targetPackageName: string) {
     }
 }
 
+export async function getCompanyName(): Promise<string> {
+    try {
+        // This function can be called from server components/pages.
+        const res = await fetch(`${process.env.API_URL}/api/wifi-name`, {
+            cache: 'force-cache' // Cache the result as it's not expected to change often
+        });
+        if (!res.ok) {
+            console.error(`Error fetching company name: ${res.status} ${res.statusText}`);
+            return "Default WiFi Portal"; // Fallback name
+        }
+        const data = await res.json();
+        return data.wifiName;
+    } catch (error) {
+        console.error("Failed to fetch company name:", error);
+        return "Default WiFi Portal"; // Fallback name
+    }
+}
+
 export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo, updateCredentials };
 export type {
     SSID,

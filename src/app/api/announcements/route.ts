@@ -1,25 +1,34 @@
 import { NextResponse } from "next/server";
 
-// PENTING: Ini adalah penyimpanan di memori. Data akan hilang saat server dimulai ulang.
-// Ganti ini dengan database sungguhan di lingkungan produksi.
-const announcementsData = [
-  {
-    "id": "1672531200000",
-    "message": "Selamat Tahun Baru 2025! Semoga di tahun yang baru ini kita semua diberikan kesehatan dan kesuksesan.",
-    "createdAt": "2025-01-01T00:00:00.000Z"
-  },
-  {
-    "id": "1672444800000",
-    "message": "Akan ada maintenance jaringan pada tanggal 31 Desember 2024 pukul 23:00.",
-    "createdAt": "2024-12-31T00:00:00.000Z"
-  }
-];
-
 export async function GET() {
-  // Di aplikasi sungguhan, Anda akan mengambil data ini dari database
-  // dan memastikan data diurutkan dari yang terbaru ke yang terlama.
-  const sortedAnnouncements = announcementsData.sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-  return NextResponse.json(sortedAnnouncements);
+  if (!process.env.API_URL) {
+    return NextResponse.json(
+      { message: "Server configuration error: API_URL is not set." },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const backendResponse = await fetch(`${process.env.API_URL}/api/announcements`, {
+      next: { revalidate: 60 } // Cache for 1 minute
+    });
+
+    if (!backendResponse.ok) {
+      const errorData = await backendResponse.json().catch(() => ({}));
+      return NextResponse.json(
+        { message: "Failed to fetch announcements from backend.", details: errorData },
+        { status: backendResponse.status }
+      );
+    }
+
+    const data = await backendResponse.json();
+    return NextResponse.json(data);
+
+  } catch (error) {
+    console.error("Error fetching announcements:", error);
+    return NextResponse.json(
+      { message: "An internal server error occurred." },
+      { status: 500 }
+    );
+  }
 }

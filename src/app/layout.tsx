@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/theme-provider";
+import { getCompanyName } from "./dashboard/actions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,10 +15,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "RAF CYBER NET",
-  description: "RAF CYBER NET Wifi Portal",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const companyName = await getCompanyName();
+  return {
+    title: companyName,
+    description: `${companyName} Wifi Portal`,
+  };
+}
 
 export default function RootLayout({
   children,

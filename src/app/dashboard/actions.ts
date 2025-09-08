@@ -248,7 +248,7 @@ const setSSIDName = async (id: string, newName: string) => {
 const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
     try {
         const headers = await getAuthHeaders();
-        const res = await fetch(`${process.env.API_URL}/api/user/${(await getAuthSession())!.user.id}`, { headers });
+        const res = await fetch(`${process.env.API_URL}/api/customer/profile`, { headers });
         if (!res.ok) {
             console.error(`Error fetching customer data: ${res.status} ${res.statusText}`);
             return null;
@@ -272,14 +272,11 @@ export async function submitReport(formData: FormData) {
         }
 
         const session = await getAuthSession();
-        const customerInfo = await getCustomerInfo();
-        if (!session?.user?.id || !customerInfo) {
-            return { message: 'Authentication or customer data missing.', success: false };
+        if (!session?.user?.id) {
+            return { message: 'Authentication data missing.', success: false };
         }
 
         const report = {
-            phoneNumber: session.user.id,
-            name: customerInfo.name,
             category: formData.get('category'),
             reportText: formData.get('description')
         };
@@ -342,7 +339,6 @@ export async function requestSpeedBoost(targetPackageName: string, duration: str
         }
 
         const boostRequest = {
-            phoneNumber: session.user.id,
             targetPackageName: targetPackageName,
             duration: duration
         };

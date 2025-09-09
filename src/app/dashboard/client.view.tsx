@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { SSIDInfo, CustomerInfo, DashboardStatus } from "./actions";
-import { getSSIDInfo, refreshObject } from "./actions";
+import { getWifiPageData, refreshObject } from "./actions";
 
 import CustomerView from "./customer.view";
 import StatusView from "./status.view";
@@ -41,7 +41,7 @@ export default function View({ ssidInfo: initialSsidInfo, customerInfo, dashboar
         toast.info("Refreshing data...");
         try {
             await refreshObject();
-            const newSsidInfo = await getSSIDInfo();
+            const newSsidInfo = await getWifiPageData();
             if (newSsidInfo) {
                 setSSIDInfo(newSsidInfo);
                 toast.success("Data refreshed successfully!");

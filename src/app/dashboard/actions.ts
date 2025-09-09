@@ -267,6 +267,23 @@ const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
     }
 }
 
+export async function getWifiPageData(): Promise<SSIDInfo | null> {
+    try {
+        const customerInfo = await getCustomerInfo();
+
+        const allowedSsids = customerInfo?.allowed_ssids && customerInfo.allowed_ssids.length > 0
+            ? customerInfo.allowed_ssids
+            : ["1"];
+
+        const ssidInfo = await getSSIDInfo(allowedSsids);
+
+        return ssidInfo;
+    } catch (error) {
+        console.error("Error fetching Wi-Fi page data:", error);
+        return null;
+    }
+}
+
 export async function submitReport(formData: FormData) {
     try {
         const status = await getDashboardStatus();

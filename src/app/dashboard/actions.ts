@@ -455,7 +455,7 @@ export async function getCompanyName(): Promise<string> {
     }
 }
 
-export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo, updateCredentials, getWifiPageData, getDashboardPageData };
+export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo, updateCredentials };
 export type {
     SSID,
     SSIDInfo,

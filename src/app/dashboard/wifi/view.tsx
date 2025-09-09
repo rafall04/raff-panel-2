@@ -15,19 +15,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const allowSsid = ["1", "5"];
-
 export default function WifiView({ ssidInfo: initialSsidInfo }: { ssidInfo: SSIDInfo }) {
     const [ssidInfo] = useState<SSIDInfo>(initialSsidInfo);
-    const [selectedSSID, setSelectedSSID] = useState<string>(ssidInfo.ssid[0].id);
-    const [syncedSsids, setSyncedSsids] = useState<string[]>(allowSsid);
+
+    // Initialize selectedSSID to "1" if available, otherwise to the first SSID.
+    const [selectedSSID, setSelectedSSID] = useState<string>(() => {
+        const availableSsids = ssidInfo.ssid;
+        if (availableSsids.some(s => s.id === "1")) {
+            return "1";
+        }
+        return availableSsids.length > 0 ? availableSsids[0].id : "";
+    });
+
+    // Initialize with no SSIDs synced, so the switch is off by default.
+    const [syncedSsids, setSyncedSsids] = useState<string[]>([]);
 
     const refreshSsidInfo = () => {
         window.location.reload();
     };
 
     const handleSyncChange = (checked: boolean) => {
-        setSyncedSsids(checked ? allowSsid : []);
+        // When toggling, use the list of all available SSIDs from props.
+        setSyncedSsids(checked ? ssidInfo.ssid.map(s => s.id) : []);
     };
 
     return (

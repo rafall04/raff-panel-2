@@ -284,6 +284,40 @@ export async function getWifiPageData(): Promise<SSIDInfo | null> {
     }
 }
 
+export async function getDashboardPageData() {
+    try {
+        const customerInfo = await getCustomerInfo();
+        const allowedSsids = customerInfo?.allowed_ssids && customerInfo.allowed_ssids.length > 0
+            ? customerInfo.allowed_ssids
+            : ["1"];
+
+        const [ssidInfo, dashboardStatus] = await Promise.all([
+            getSSIDInfo(allowedSsids),
+            getDashboardStatus()
+        ]);
+
+        return { ssidInfo, customerInfo, dashboardStatus };
+    } catch (error) {
+        console.error("Error fetching dashboard page data:", error);
+        return { ssidInfo: null, customerInfo: null, dashboardStatus: { activeBoost: null, activeReport: null } };
+    }
+}
+
+export async function getDashboardStatus(): Promise<DashboardStatus> {
+    try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${process.env.API_URL}/api/dashboard-status`, { headers });
+        if (!res.ok) {
+            console.error(`Error fetching dashboard status: ${res.status} ${res.statusText}`);
+            throw new Error('Failed to fetch dashboard status');
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("Failed to fetch dashboard status:", error);
+        return { activeBoost: null, activeReport: null };
+    }
+}
+
 export async function submitReport(formData: FormData) {
     try {
         const status = await getDashboardStatus();
@@ -321,21 +355,6 @@ export async function submitReport(formData: FormData) {
     } catch (error) {
         console.error(error);
         return { message: 'Failed to submit report.', success: false };
-    }
-}
-
-export async function getDashboardStatus(): Promise<DashboardStatus> {
-    try {
-        const headers = await getAuthHeaders();
-        const res = await fetch(`${process.env.API_URL}/api/dashboard-status`, { headers });
-        if (!res.ok) {
-            console.error(`Error fetching dashboard status: ${res.status} ${res.statusText}`);
-            throw new Error('Failed to fetch dashboard status');
-        }
-        return await res.json();
-    } catch (error) {
-        console.error("Failed to fetch dashboard status:", error);
-        return { activeBoost: null, activeReport: null };
     }
 }
 
@@ -436,7 +455,7 @@ export async function getCompanyName(): Promise<string> {
     }
 }
 
-export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo, updateCredentials };
+export { rebootRouter, refreshObject, getSSIDInfo, setPassword, setSSIDName, getCustomerInfo, updateCredentials, getWifiPageData, getDashboardPageData };
 export type {
     SSID,
     SSIDInfo,

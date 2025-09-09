@@ -1,12 +1,8 @@
-import { getSSIDInfo, getCustomerInfo, getDashboardStatus } from "./actions";
+import { getDashboardPageData } from "./actions";
 import ClientView from "./client.view";
 export const dynamic = 'force-dynamic'
 export default async function Page() {
-    const [ssidInfo, customerInfo, dashboardStatus] = await Promise.all([
-        getSSIDInfo(),
-        getCustomerInfo(),
-        getDashboardStatus()
-    ]);
+    const { ssidInfo, customerInfo, dashboardStatus } = await getDashboardPageData();
 
     if (!ssidInfo) {
         return (

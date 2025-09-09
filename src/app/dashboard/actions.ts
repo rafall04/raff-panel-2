@@ -46,6 +46,7 @@ interface CustomerInfo {
     dueDate: string;
     paymentStatus: string;
     address: string;
+    allowed_ssids?: string[];
 }
 
 interface ReportHistoryItem {
@@ -115,7 +116,6 @@ export async function getBoostPackages(): Promise<BoostPackage[]> {
     }
 }
 
-const allowSsid = ["1", "5"];
 const rebootRouter = async () => {
     try {
         const session = await getAuthSession();
@@ -159,7 +159,7 @@ const refreshObject = async() => {
     }
 }
 
-const getSSIDInfo = async (): Promise<SSIDInfo | null> => {
+const getSSIDInfo = async (allowedSsids: string[]): Promise<SSIDInfo | null> => {
     try {
         const session = await getAuthSession();
         const res = await fetch(process.env.GENIEACS_URL + "/devices/?query=" + encodeURIComponent(JSON.stringify({ _id: session!.user.deviceId })));
@@ -190,7 +190,7 @@ const getSSIDInfo = async (): Promise<SSIDInfo | null> => {
                         };
                     })
                 };
-            }).filter(v => !!v && allowSsid.includes(v.id)) as SSID[]
+            }).filter(v => !!v && allowedSsids.includes(v.id)) as SSID[]
         };
     } catch (error) {
         console.error(error);
@@ -199,10 +199,13 @@ const getSSIDInfo = async (): Promise<SSIDInfo | null> => {
 }
 
 const setPassword = async (id: string, newPassword: string) => {
-    const session = await getAuthSession();
+    const customerInfo = await getCustomerInfo();
+    const allowSsid = customerInfo?.allowed_ssids && customerInfo.allowed_ssids.length > 0 ? customerInfo.allowed_ssids : ["1"];
+
     if (!allowSsid.includes(id)) {
         throw new Error(`Error setting password: SSID Not Allowed`);
     }
+    const session = await getAuthSession();
     const req = await fetch(process.env.GENIEACS_URL + "/devices/" + session!.user.deviceId + "/tasks?connection_request", {
         method: 'POST',
         body: JSON.stringify({
@@ -224,6 +227,9 @@ const setPassword = async (id: string, newPassword: string) => {
 }
 
 const setSSIDName = async (id: string, newName: string) => {
+    const customerInfo = await getCustomerInfo();
+    const allowSsid = customerInfo?.allowed_ssids && customerInfo.allowed_ssids.length > 0 ? customerInfo.allowed_ssids : ["1"];
+
     if (!allowSsid.includes(id)) {
         throw new Error(`Error setting name: SSID Not Allowed`);
     }

@@ -1,34 +1,65 @@
-import { NextResponse } from "next/server";
+import { routeError, routeSuccess } from "@/lib/route-response";
+import { logPortalServerEvent } from "@/lib/server-log";
 
+/**
+ * Public endpoint untuk mendapatkan WiFi name dari config
+ * Endpoint: GET /api/wifi-name
+ * Authentication: Tidak diperlukan (public endpoint)
+ * Response format: { status: 200, message: "...", data: { wifiName: "..." } }
+ */
 export async function GET() {
   if (!process.env.API_URL) {
-    return NextResponse.json(
-      { message: "Server configuration error: API_URL is not set." },
-      { status: 500 }
-    );
+    return routeError("Server configuration error.", {
+      status: 500,
+      event: "wifi_name_config_error",
+      context: { domain: "settings" },
+      cache: "revalidate",
+    });
   }
 
   try {
-    const backendResponse = await fetch(`${process.env.API_URL}/api/wifi-name`, {
-      next: { revalidate: 3600 } // Cache for 1 hour, as this likely doesn't change often
-    });
+    const backendResponse = await fetch(
+      `${process.env.API_URL}/api/wifi-name`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour, as this likely doesn't change often
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
 
     if (!backendResponse.ok) {
-      const errorData = await backendResponse.json().catch(() => ({}));
-      return NextResponse.json(
-        { message: "Failed to fetch wifi name from backend.", details: errorData },
-        { status: backendResponse.status }
-      );
+      return routeError("Failed to fetch wifi name from backend.", {
+        status: backendResponse.status,
+        event: "wifi_name_backend_error",
+        context: { domain: "settings", status: backendResponse.status },
+        cache: "revalidate",
+      });
     }
 
-    const data = await backendResponse.json();
-    return NextResponse.json(data);
+    const data = (await backendResponse.json()) as {
+      message?: string;
+      data?: { wifiName?: string };
+      wifiName?: string;
+    };
 
-  } catch (error) {
-    console.error("Error fetching wifi name:", error);
-    return NextResponse.json(
-      { message: "An internal server error occurred." },
-      { status: 500 }
+    return routeSuccess(
+      {
+        wifiName: data.wifiName || data.data?.wifiName || "Default WiFi Name",
+      },
+      data.message || "Nama WiFi berhasil diambil",
+      {
+        cache: "revalidate",
+      },
     );
+  } catch (error) {
+    logPortalServerEvent("error", "wifi_name_fetch_error", {
+      domain: "settings",
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+    return routeError("Terjadi kesalahan pada server.", {
+      status: 500,
+      cache: "revalidate",
+    });
   }
 }

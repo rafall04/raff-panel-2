@@ -1,14 +1,34 @@
-import { NextResponse } from "next/server";
+import { routeSuccess } from "@/lib/route-response";
+import { logPortalServerEvent } from "@/lib/server-log";
 
 export async function GET() {
-  // Di masa mendatang, Anda bisa mengganti bagian ini untuk mengambil data dari database Anda.
-  // Contoh:
-  // const settings = await database.query("SELECT company_name FROM settings LIMIT 1");
-  // const companyName = settings[0].company_name;
+  if (!process.env.API_URL) {
+    return routeSuccess({ companyName: "WiFi Portal" }, undefined, {
+      cache: "revalidate",
+    });
+  }
 
-  // Untuk saat ini, kita akan menggunakan nama yang di-hardcode.
-  // Silakan ganti nilai ini sesuai dengan yang ada di backend Anda.
-  const companyName = "RAF CYBER NET";
+  try {
+    const response = await fetch(`${process.env.API_URL}/api/wifi-name`, {
+      next: { revalidate: 3600 },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  return NextResponse.json({ companyName });
+    const data = await response.json().catch(() => null);
+    const companyName = data?.data?.wifiName || data?.wifiName || "WiFi Portal";
+
+    return routeSuccess({ companyName }, undefined, {
+      cache: "revalidate",
+    });
+  } catch (error) {
+    logPortalServerEvent("warn", "settings_company_name_fallback", {
+      domain: "settings",
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+    return routeSuccess({ companyName: "WiFi Portal" }, undefined, {
+      cache: "revalidate",
+    });
+  }
 }

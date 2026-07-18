@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local backup archives (never commit — large, and easy to regenerate)
+*.zip
+
+# editor/agent local settings (machine-specific, not shared)
+.claude/settings.local.json
+
+# app logs
+*.log

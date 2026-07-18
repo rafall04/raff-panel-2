@@ -1,98 +1,143 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { setPassword, setSSIDName } from "./actions";
-import { Lock, Type, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { updateWifiSettings } from "./actions";
+import { Lock, Type, Save, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-export default function Form({ ssid, selectedSsid, syncedSsids, refreshSsidInfo }: {ssid: {id: string, name: string }[], selectedSsid: string, syncedSsids: string[], refreshSsidInfo: () => void}) {
-    const [form, setForm] = useState({
-        ssid: ssid.find(v => v.id == selectedSsid)?.name || ssid[0].name,
-        password: ''
-    });
-    const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
+export default function Form({
+  ssid,
+  selectedSsid,
+  syncedSsids,
+  refreshSsidInfo,
+}: {
+  ssid: { id: string; name: string }[];
+  selectedSsid: string;
+  syncedSsids: string[];
+  refreshSsidInfo: () => void;
+}) {
+  // Get selected SSID name or fallback to first SSID
+  const getSsidName = (): string => {
+    const selected = ssid.find((v) => v.id === selectedSsid);
+    if (selected) {
+      return selected.name;
+    }
+    const firstSsid = ssid.length > 0 ? ssid[0] : null;
+    return firstSsid?.name || "";
+  };
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setLoading(true);
+  const [form, setForm] = useState({
+    ssid: getSsidName(),
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-        const tasks: Promise<{ message: string }>[] = [];
-        if(form.ssid !== ssid.find(v => v.id == selectedSsid)?.name){
-            const sids = syncedSsids.length > 0 ? syncedSsids : [selectedSsid];
-            sids.forEach(id => tasks.push(setSSIDName(id, form.ssid)));
-        }
-        if(form.password.length > 0){
-            const sids = syncedSsids.length > 0 ? syncedSsids : [selectedSsid];
-            sids.forEach(id => tasks.push(setPassword(id, form.password)));
-        }
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
 
-        if (tasks.length === 0) {
-            toast.info("No changes to save.");
-            setLoading(false);
-            return;
-        }
+    const selectedIds = syncedSsids.length > 0 ? syncedSsids : [selectedSsid];
+    const selectedName = ssid.find((v) => v.id === selectedSsid)?.name || "";
+    const newName = form.ssid !== selectedName ? form.ssid : undefined;
+    const newPassword = form.password.length > 0 ? form.password : undefined;
 
-        try {
-            await Promise.all(tasks);
-            toast.success("Settings updated successfully!");
-            refreshSsidInfo();
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to update settings.");
-        } finally {
-            setLoading(false);
-        }
+    if (!newName && !newPassword) {
+      toast.info("No changes to save.");
+      setLoading(false);
+      return;
     }
 
-    useEffect(() => {
-        setForm({
-            ssid: ssid.find(v => v.id == selectedSsid)?.name || ssid[0].name,
-            password: ''
-        });
-    }, [selectedSsid, ssid]);
+    try {
+      const result = await updateWifiSettings({
+        ssidIds: selectedIds,
+        newName,
+        newPassword,
+      });
 
-    return (
-        <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label htmlFor="ssid">SSID Name</Label>
-                    <div className="relative">
-                        <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input id="ssid" type="text" value={form.ssid} onChange={(e) => setForm({ ...form, ssid: e.target.value })} className="pl-10" required />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="password">New Password (optional)</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Leave blank to keep current"
-                            value={form.password}
-                            onChange={(e) => setForm({ ...form, password: e.target.value })}
-                            className="pl-10 pr-10"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div className="flex w-full justify-end">
-                <Button type="submit" disabled={loading}>
-                    {loading ? <Loader2 size={16} className="mr-2 animate-spin"/> : <Save size={16} className="mr-2"/>}
-                    Simpan
-                </Button>
-            </div>
-        </form>
-    );
+      if (result.success) {
+        toast.success(result.message);
+      } else if (result.successCount > 0) {
+        toast.warning(result.message);
+      } else {
+        toast.error(result.message);
+      }
+
+      void refreshSsidInfo();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update settings.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setForm({
+      ssid: getSsidName(),
+      password: "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSsid, ssid]);
+
+  return (
+    <form
+      className="space-y-6"
+      onSubmit={(e) => {
+        void handleSubmit(e);
+      }}
+    >
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="ssid">SSID Name</Label>
+          <div className="relative">
+            <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              id="ssid"
+              type="text"
+              value={form.ssid}
+              onChange={(e) => setForm({ ...form, ssid: e.target.value })}
+              className="pl-10"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">New Password (optional)</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Leave blank to keep current"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="pl-10 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="flex w-full justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <Loader2 size={16} className="mr-2 animate-spin" />
+          ) : (
+            <Save size={16} className="mr-2" />
+          )}
+          Simpan
+        </Button>
+      </div>
+    </form>
+  );
 }

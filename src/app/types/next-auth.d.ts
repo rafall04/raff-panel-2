@@ -1,5 +1,6 @@
 import "next-auth";
 import "next-auth/jwt";
+import type { SiteId } from "@/lib/sites";
 
 declare module "next-auth/jwt" {
   /**
@@ -12,6 +13,8 @@ declare module "next-auth/jwt" {
     phoneNumber?: string | null;
     backendToken: string;
     userData: unknown;
+    /** Which raf-bot-v2 backend this session is pinned to. Set once at login. */
+    site: SiteId;
   }
 }
 
@@ -26,6 +29,8 @@ declare module "next-auth" {
     phoneNumber?: string | null;
     backendToken: string;
     userData: unknown;
+    /** The site the customer picked on the login screen. */
+    site: SiteId;
   }
 
   /**
@@ -36,6 +41,7 @@ declare module "next-auth" {
       id: string;
       name?: string | null;
       phoneNumber?: string | null;
+      site?: SiteId;
     };
   }
 }

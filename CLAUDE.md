@@ -19,7 +19,7 @@ Pre-commit runs `lint-staged` (ESLint `--fix` + Prettier on staged files). Type 
 
 ## The backend: raf-bot-v2
 
-This panel is a **customer-facing frontend with no database of its own**. Every piece of data comes from `raf-bot-v2`, a separate Express monolith at `C:\project\raf-bot-v2` (port 3100), pointed at by `API_URL`. It is an ISP/RTRW-Net system: WhatsApp bot (Baileys), admin panel, SQLite, plus GenieACS (TR-069) and MikroTik integrations. When a change here needs a new field or endpoint, the work is usually **in that repo**, not this one.
+This panel is a **customer-facing frontend with no database of its own**. Every piece of data comes from `raf-bot-v2`, a separate Express monolith at `C:\project\raf-bot-v2` (port 3100), pointed at per-site by `API_URL_<SITE>` (this panel is **multi-tenant** — one instance, several site backends; see Environment). It is an ISP/RTRW-Net system: WhatsApp bot (Baileys), admin panel, SQLite, plus GenieACS (TR-069) and MikroTik integrations. When a change here needs a new field or endpoint, the work is usually **in that repo**, not this one.
 
 That repo has its own `CLAUDE.md` and `SYSTEM_MAP.md`. Read them before touching anything cross-cutting.
 
@@ -56,14 +56,14 @@ Server Component ───→ server action ──────────┘
 |         | [api-server.ts](src/lib/api-server.ts) `serverApiClient` | [api-client.ts](src/lib/api-client.ts) `apiClient` |
 | ------- | -------------------------------------------------------- | -------------------------------------------------- |
 | Runs in | Server components, server actions, route handlers        | Browser                                            |
-| Targets | raf-bot-v2 via `API_URL`                                 | **Local Next routes only**                         |
+| Targets | raf-bot-v2 for the session's site (`API_URL_<SITE>`)     | **Local Next routes only**                         |
 | Auth    | Injects `Authorization: Bearer` from the session         | None (cookies ride along)                          |
 
 `apiClient.buildUrl` **throws** on any absolute `http(s)://` URL. That guard is intentional — it enforces the BFF boundary. If you find yourself wanting to disable it, add a route handler instead.
 
 ### Layers
 
-- `src/services/*.service.ts` — classes of `static` methods, one per backend domain, each owning its endpoint paths and types. All backend calls belong here; don't scatter raw `fetch` calls to `API_URL`.
+- `src/services/*.service.ts` — classes of `static` methods, one per backend domain, each owning its endpoint paths and types. All backend calls belong here; don't scatter raw `fetch` calls to the backend host.
 - `src/app/api/**/route.ts` — BFF proxies for client-side fetching. Build responses with `routeSuccess` / `routeError` / `routeFromApiResponse` / `routeFromServerError` from [route-response.ts](src/lib/route-response.ts) rather than bare `NextResponse.json`, so cache headers and error logging stay consistent. Default is `no-store`; pass `cache: "revalidate"` for public, slow-moving data.
 - `src/app/dashboard/_server/*` — the real server-action implementations, split by domain.
 - `src/app/dashboard/actions.ts` — a **thin `"use server"` re-export façade** over `_server/*`, plus the type re-exports. New server-side logic goes in `_server/`, then gets a passthrough wrapper here. Components import from `actions.ts`, not from `_server/` directly.
@@ -89,11 +89,22 @@ The backend signs customer tokens with the **`jwt` field in its `config.json`**,
 
 `.env` (server-only; no `NEXT_PUBLIC_*` is used anywhere):
 
-- `API_URL` — raf-bot-v2 base URL, e.g. `http://192.168.145.245:3100`. **Required**; the app degrades to config errors without it.
+- `API_URL_<SITE>` — raf-bot-v2 base URL per site, e.g. `API_URL_DANDER`, `API_URL_TANJUNGHARJO`. This panel is **multi-tenant**: one deployment (`client.rafnet.my.id`) serves every site, and each request is pinned to one backend by the session's `site` claim, chosen at login. The site registry is [sites.ts](src/lib/sites.ts) — add a site there and set its `API_URL_<ID>`. At least one must be set or the app degrades to config errors.
+- `DEFAULT_SITE` — site used for pre-login branding, since a visitor's site is not known until they log in (defaults to the first registered site).
 - `NEXTAUTH_SECRET` — **required**; [auth.ts](src/lib/auth.ts) throws at import time if missing.
 - `NEXTAUTH_URL`
 
-`API_URL` is the **only** external host this panel ever calls — verified by grepping every fetch target. There was once a `GENIEACS_URL` here; it was never read in `src/` and has been removed because it implied a direct GenieACS path that does not exist. WiFi operations reach GenieACS only through raf-bot-v2, which derives `device_id` from the authenticated customer's own row and validates the SSID index against their `allowed_ssids` — a customer cannot address someone else's device. If you find yourself adding a second external host here, that is the BFF boundary breaking.
+The `API_URL_<SITE>` hosts are the **only** external hosts this panel calls, and they are all the same kind of service — a per-site raf-bot-v2 — reached through the BFF, never from the browser. Which one an authenticated request hits is fixed by its `site` claim (see [Multi-tenant routing](#multi-tenant-routing)), so a customer can never address another site's backend. There was once a `GENIEACS_URL` here; it was never read in `src/` and has been removed because it implied a direct GenieACS path that does not exist. WiFi operations reach GenieACS only through raf-bot-v2, which derives `device_id` from the authenticated customer's own row and validates the SSID index against their `allowed_ssids` — a customer cannot address someone else's device. If you find yourself adding an external host that is **not** a per-site raf-bot-v2, that is the BFF boundary breaking.
+
+### Multi-tenant routing
+
+One codebase, one running instance, N backends — selected per request, never mixed:
+
+- **Registry**: [sites.ts](src/lib/sites.ts) maps each `SiteId` to its label and `API_URL_<ID>`. `getSiteApiUrl` **throws** on an unconfigured site rather than falling back — a misconfig must fail loudly, never silently route to the wrong tenant.
+- **Login auto-detects the site**: customers never pick a location. Both providers ([auth.ts](src/lib/auth.ts)) fan out across every site's backend (`fanOutAuth` in [auth.server.ts](src/utils/auth.server.ts)) and let the backend that recognizes the customer win — OTP request/verify treat **404** ("not my customer") as "try the next site", password login treats **401** the same way, and the first backend to accept wins. That site is sealed into the JWT as `token.site`, immutable for the session (switching sites means logging out). Unreachable backends (5xx/timeout) are skipped but remembered, so a one-site outage never blocks the other site's customers.
+- **Every backend call resolves from the claim**: `getBackendContext()` reads `{ baseUrl, token, site }` from the JWT in one shot; `serverApiClient` and the multipart upload services use it. Public/pre-login routes (news, announcements, wifi-name, company name) use `getPublicBackendBaseUrl()` — session site when logged in, else `DEFAULT_SITE` (pre-login branding, since no site is known until login).
+- **Middleware** treats a session with no valid `site` claim (i.e. minted before this feature) like an expired one and forces re-login.
+- **Cross-site isolation (backend action required)**: both backends default to issuer `raf-bot-v2` / audience `raff-panel-2`, so give each site a **distinct `jwt` signing secret** in its raf-bot-v2 `config.json`. Then a token minted for one site cannot verify against another even if routing were ever wrong — defense in depth behind the `site` claim.
 
 ## Enforced conventions
 

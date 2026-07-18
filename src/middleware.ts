@@ -44,12 +44,22 @@ function isBackendTokenExpired(token: string): boolean {
  * connection" — advice that is both wrong and unactionable.
  */
 export default withAuth((req) => {
-  const backendToken = req.nextauth.token?.backendToken;
+  const token = req.nextauth.token;
+  const backendToken = token?.backendToken;
 
-  if (
-    typeof backendToken !== "string" ||
-    !isBackendTokenExpired(backendToken)
-  ) {
+  // A session minted before multi-tenant support carries no `site` claim, so no
+  // backend call can be routed. Treat it like an expired session and force a
+  // fresh login (which now pins a site). Kept as inline literals so the Edge
+  // middleware bundle need not import the site registry — src/lib/sites.ts is
+  // the source of truth for these ids.
+  const siteMissing =
+    token?.site !== "DANDER" && token?.site !== "TANJUNGHARJO";
+
+  const needsReauth =
+    siteMissing ||
+    (typeof backendToken === "string" && isBackendTokenExpired(backendToken));
+
+  if (!needsReauth) {
     return NextResponse.next();
   }
 

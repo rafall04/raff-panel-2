@@ -1,8 +1,12 @@
 import { routeError, routeSuccess } from "@/lib/route-response";
 import { logPortalServerEvent } from "@/lib/server-log";
+import { getPublicBackendBaseUrl } from "@/lib/auth";
 
 export async function GET() {
-  if (!process.env.API_URL) {
+  let baseUrl: string;
+  try {
+    baseUrl = await getPublicBackendBaseUrl();
+  } catch {
     return routeError("Server configuration error.", {
       status: 500,
       event: "news_config_error",
@@ -11,7 +15,7 @@ export async function GET() {
   }
 
   try {
-    const backendResponse = await fetch(`${process.env.API_URL}/api/news`, {
+    const backendResponse = await fetch(`${baseUrl}/api/news`, {
       cache: "no-store", // Always fetch fresh data
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",

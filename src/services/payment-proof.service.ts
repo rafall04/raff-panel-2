@@ -7,7 +7,7 @@
  * - "sod"     — proof for a pending Speed On Demand request
  */
 
-import { getBackendAccessToken } from "@/lib/auth";
+import { getBackendContext } from "@/lib/auth";
 import type { ApiResponse } from "@/types/api";
 
 const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024;
@@ -70,13 +70,8 @@ export class PaymentProofService {
       };
     }
 
-    const apiUrl = process.env.API_URL;
-    if (!apiUrl) {
-      return { success: false, message: "API URL is not configured" };
-    }
-
-    const token = await getBackendAccessToken();
-    if (!token) {
+    const ctx = await getBackendContext();
+    if (!ctx) {
       return { success: false, message: "Unauthorized" };
     }
 
@@ -85,10 +80,10 @@ export class PaymentProofService {
     formData.append("caption", caption);
     formData.append("proof", file);
 
-    const response = await fetch(`${apiUrl}/api/customer/payment-proof`, {
+    const response = await fetch(`${ctx.baseUrl}/api/customer/payment-proof`, {
       method: "POST",
       // Content-Type is intentionally omitted: fetch derives the multipart boundary.
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${ctx.token}` },
       body: formData,
       cache: "no-store",
     });

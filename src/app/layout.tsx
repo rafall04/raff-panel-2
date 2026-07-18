@@ -5,6 +5,13 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getCompanyName } from "./dashboard/actions";
 
+// Branding (title/description) is resolved per-tenant via getCompanyName — the
+// logged-in session's site, or DEFAULT_SITE before login — so nothing under the
+// root can be statically pre-rendered without a request. Declaring it dynamic
+// keeps the build from attempting static generation (getCompanyName reads
+// cookies) and swallowing Next's DynamicServerError.
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

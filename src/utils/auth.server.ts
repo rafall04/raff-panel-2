@@ -1,5 +1,7 @@
 "use server";
 
+import { SITE_IDS, getSiteApiUrl, type SiteId } from "@/lib/sites";
+
 /**
  * Login and OTP are the first thing a customer touches, so they must fail fast
  * and say so rather than hang. raf-bot-v2 can stall behind WhatsApp delivery or
@@ -20,24 +22,40 @@ type AuthResponse = {
   user: Record<string, unknown> | null;
   token: string | undefined;
   message: string | null;
+  /** Which site answered — set once fan-out settles on a backend. */
+  site?: SiteId;
 };
 
-async function postAuthRequest(
+/**
+ * POST an auth request to one specific site's backend.
+ *
+ * Customers never pick a location; the panel discovers it by trying each site
+ * (see {@link fanOutAuth}). This is the single-site leg of that fan-out, so it
+ * tags every response with the site it came from.
+ */
+async function postAuthToSite(
+  site: SiteId,
   endpoint: string,
   payload: Record<string, unknown>,
 ): Promise<AuthResponse> {
-  if (!process.env.API_URL) {
-    console.error("FATAL: API_URL environment variable is not set.");
+  let baseUrl: string;
+  try {
+    baseUrl = getSiteApiUrl(site);
+  } catch (error) {
+    console.error(
+      error instanceof Error ? error.message : "Site URL not configured",
+    );
     return {
       status: 500,
       user: null,
       token: undefined,
-      message: "Server configuration error: API_URL is not set.",
+      message: "Server configuration error: backend URL is not set.",
+      site,
     };
   }
 
   try {
-    const req = await fetch(`${process.env.API_URL}${endpoint}`, {
+    const req = await fetch(`${baseUrl}${endpoint}`, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: { "Content-Type": "application/json" },
@@ -52,6 +70,7 @@ async function postAuthRequest(
       user: responseData.user || json.user || null,
       token: responseData.token || json.token || undefined,
       message: json.message || null,
+      site,
     };
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -67,61 +86,113 @@ async function postAuthRequest(
         user: null,
         token: undefined,
         message: "Server sedang lambat merespons. Silakan coba lagi.",
+        site,
       };
     }
 
-    // The raw error message is not shown: it would leak internals (a bad
-    // API_URL echoes the internal host) and means nothing to a customer.
+    // The raw error message is not shown: it would leak internals (a bad URL
+    // echoes the internal host) and means nothing to a customer.
     return {
       status: 500,
       user: null,
       token: undefined,
       message: "Terjadi kendala pada server. Silakan coba lagi.",
+      site,
     };
   }
 }
 
-export const requestOtp = async (phoneNumber: string) => {
-  if (!process.env.API_URL) {
-    console.error("FATAL: API_URL environment variable is not set.");
-    return {
-      ok: false,
-      message: "Server configuration error: API_URL is not set.",
-    };
-  }
-  try {
-    const req = await fetch(`${process.env.API_URL}/api/auth/otp/request`, {
-      method: "POST",
-      body: JSON.stringify({
-        phoneNumber,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
-    });
+/**
+ * Discover which site a customer belongs to by trying each backend in turn.
+ *
+ * The panel holds no customer directory — the per-site raf-bot-v2 backends are
+ * the only source of truth — so "which site is this?" is answered by asking
+ * them. The first backend that accepts the request wins, and its site is what
+ * gets pinned to the session.
+ *
+ * `notMineStatus` is the HTTP status a backend returns when the identity is not
+ * one of its customers, so fan-out should move on to the next site:
+ *   - OTP request/verify → 404 (a precise "not my customer")
+ *   - password login     → 401 ("wrong username or password" is indistinguishable
+ *                           from "not found", so every site is tried)
+ *
+ * A backend that is merely unreachable (5xx / timeout) is inconclusive: we skip
+ * it but remember it, so a customer at site B still logs in while site A is down,
+ * and a total outage surfaces "try again" rather than a misleading "not found".
+ * Any other 4xx (wrong OTP, expired, rate-limited) is the owning site's final
+ * word and is returned as-is.
+ */
+async function fanOutAuth(
+  endpoint: string,
+  payload: Record<string, unknown>,
+  notMineStatus: number,
+): Promise<AuthResponse> {
+  let unreachable: AuthResponse | null = null;
+  let notMine: AuthResponse | null = null;
 
-    const data = await req.json();
-    return {
-      ok: req.ok,
-      message: data.message,
-    };
-  } catch (error) {
+  for (const site of SITE_IDS) {
+    const result = await postAuthToSite(site, endpoint, payload);
+
+    if (result.status >= 200 && result.status < 300) {
+      return result; // this site owns the customer
+    }
+    if (result.status === notMineStatus) {
+      notMine = result;
+      continue;
+    }
+    if (result.status >= 500) {
+      unreachable = result;
+      continue;
+    }
+    return result; // a definitive rejection from the owning site
+  }
+
+  // No site accepted. Prefer surfacing an outage over a misleading "not found".
+  return (
+    unreachable ??
+    notMine ?? {
+      status: notMineStatus,
+      user: null,
+      token: undefined,
+      message: null,
+      site: undefined,
+    }
+  );
+}
+
+export const requestOtp = async (phoneNumber: string) => {
+  const result = await fanOutAuth(
+    "/api/auth/otp/request",
+    { phoneNumber },
+    404,
+  );
+
+  if (result.status >= 200 && result.status < 300) {
+    return { ok: true, message: result.message ?? "Kode OTP sudah dikirim." };
+  }
+
+  if (result.status === 404) {
     return {
       ok: false,
-      message: isTimeout(error)
-        ? "Server sedang lambat merespons. Silakan coba lagi."
-        : "Terjadi kendala saat mengirim kode OTP. Silakan coba lagi.",
+      message:
+        "Nomor WhatsApp tidak terdaftar. Pastikan nomor sesuai data pelanggan Anda.",
     };
   }
+
+  return {
+    ok: false,
+    message:
+      result.message ??
+      "Terjadi kendala saat mengirim kode OTP. Silakan coba lagi.",
+  };
 };
 
 export const verify = async (phoneNumber: string, otp: string) => {
-  return postAuthRequest("/api/auth/otp/verify", { phoneNumber, otp });
+  return fanOutAuth("/api/auth/otp/verify", { phoneNumber, otp }, 404);
 };
 
 export const verifyPassword = async (username: string, password: string) => {
-  return postAuthRequest("/api/auth/login", { username, password });
+  return fanOutAuth("/api/auth/login", { username, password }, 401);
 };
 
 export const updateCredentials = async (
@@ -129,10 +200,10 @@ export const updateCredentials = async (
   newUsername?: string,
   newPassword?: string,
 ) => {
-  const { getBackendAccessToken } = await import("@/lib/auth");
-  const token = await getBackendAccessToken();
+  const { getBackendContext } = await import("@/lib/auth");
+  const ctx = await getBackendContext();
 
-  if (!token) {
+  if (!ctx) {
     return {
       status: 401,
       message: "Not authenticated",
@@ -151,17 +222,14 @@ export const updateCredentials = async (
     body.newPassword = newPassword;
   }
 
-  const req = await fetch(
-    `${process.env.API_URL}/api/customer/account/update`,
-    {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+  const req = await fetch(`${ctx.baseUrl}/api/customer/account/update`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${ctx.token}`,
     },
-  );
+  });
 
   const json = await req.json();
 

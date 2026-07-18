@@ -4,6 +4,12 @@ import { getToken } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { cookies } from "next/headers";
 import { verify, verifyPassword } from "@/utils/auth.server";
+import {
+  DEFAULT_SITE,
+  getSiteApiUrl,
+  isSiteId,
+  type SiteId,
+} from "@/lib/sites";
 
 if (!process.env.NEXTAUTH_SECRET) {
   throw new Error("FATAL: NEXTAUTH_SECRET environment variable is not set.");
@@ -30,6 +36,8 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Phone number and OTP are required.");
           }
 
+          // No site is passed from the client: the panel discovers it by
+          // fanning out across backends and pins whichever one owns this number.
           const r = await verify(credentials.phoneNumber, credentials.otp);
 
           if (r.status !== 200) {
@@ -59,6 +67,12 @@ export const authOptions: NextAuthOptions = {
             );
           }
 
+          if (!isSiteId(r.site)) {
+            throw new Error(
+              "Authentication failed: site could not be determined.",
+            );
+          }
+
           return {
             id: credentials.phoneNumber,
             name: typeof r.user.name === "string" ? r.user.name : null,
@@ -70,6 +84,7 @@ export const authOptions: NextAuthOptions = {
                   : credentials.phoneNumber,
             backendToken: r.token,
             userData: r.user,
+            site: r.site,
           };
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
@@ -93,6 +108,8 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.username || !credentials.password) {
           throw new Error("Username and password are required.");
         }
+        // No site is passed from the client: fan-out finds the backend that
+        // accepts these credentials and that site is pinned to the session.
         const r = await verifyPassword(
           credentials.username,
           credentials.password,
@@ -113,6 +130,11 @@ export const authOptions: NextAuthOptions = {
             "Authentication failed: User data not received from backend.",
           );
         }
+        if (!isSiteId(r.site)) {
+          throw new Error(
+            "Authentication failed: site could not be determined.",
+          );
+        }
         const userIdentifier =
           r.user.phoneNumber ||
           r.user.phone_number ||
@@ -130,6 +152,7 @@ export const authOptions: NextAuthOptions = {
                 : String(userIdentifier),
           backendToken: r.token,
           userData: r.user,
+          site: r.site,
         };
       },
     }),
@@ -164,6 +187,7 @@ export const authOptions: NextAuthOptions = {
         // deviceId tidak diperlukan - backend sudah handle
         token.backendToken = userData.backendToken;
         token.userData = userData.userData;
+        token.site = userData.site;
       }
 
       return token;
@@ -174,6 +198,9 @@ export const authOptions: NextAuthOptions = {
         typeof token.name === "string" ? token.name : session.user.name;
       session.user.phoneNumber =
         typeof token.phoneNumber === "string" ? token.phoneNumber : null;
+      if (isSiteId(token.site)) {
+        session.user.site = token.site;
+      }
 
       return session;
     },
@@ -186,7 +213,14 @@ export const authOptions: NextAuthOptions = {
 
 export const getAuthSession = () => getServerSession(authOptions);
 
-export async function getBackendAccessToken(): Promise<string | null> {
+/**
+ * Read the encrypted NextAuth JWT for the current request.
+ *
+ * We hold the backend's token and the site claim inside this cookie; both are
+ * needed to talk to the right raf-bot-v2. Reads the cookie via next-auth/jwt so
+ * `backendToken` never has to be copied onto the session (see CLAUDE.md Auth).
+ */
+async function readJwt() {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
@@ -200,7 +234,7 @@ export async function getBackendAccessToken(): Promise<string | null> {
     return null;
   }
 
-  const token = await getToken({
+  return getToken({
     req: {
       headers: {
         cookie: cookieHeader,
@@ -208,6 +242,60 @@ export async function getBackendAccessToken(): Promise<string | null> {
     } as never,
     secret: process.env.NEXTAUTH_SECRET,
   });
+}
 
+export async function getBackendAccessToken(): Promise<string | null> {
+  const token = await readJwt();
   return typeof token?.backendToken === "string" ? token.backendToken : null;
+}
+
+/** The site this session is pinned to, or null if not logged in. */
+export async function getSessionSite(): Promise<SiteId | null> {
+  const token = await readJwt();
+  return isSiteId(token?.site) ? token.site : null;
+}
+
+export interface BackendContext {
+  /** Base URL of the raf-bot-v2 backend for this session's site. */
+  baseUrl: string;
+  /** The backend-issued bearer token. */
+  token: string;
+  site: SiteId;
+}
+
+/**
+ * Everything an authenticated backend call needs, resolved from one JWT read:
+ * which backend to hit and the token to hit it with. Returns null when the
+ * request is not authenticated or predates the multi-tenant `site` claim.
+ *
+ * Throws only when the site is valid but its `API_URL_<SITE>` is unset — a real
+ * deploy misconfiguration that must surface, not be silently rerouted.
+ */
+export async function getBackendContext(): Promise<BackendContext | null> {
+  const token = await readJwt();
+  if (
+    !token ||
+    typeof token.backendToken !== "string" ||
+    !isSiteId(token.site)
+  ) {
+    return null;
+  }
+
+  return {
+    baseUrl: getSiteApiUrl(token.site),
+    token: token.backendToken,
+    site: token.site,
+  };
+}
+
+/**
+ * Base URL for a public/unauthenticated backend call. Prefers the session's
+ * pinned site when logged in (e.g. the dashboard hitting the public news route).
+ * Pre-login there is no site to resolve — customers do not pick one — so branding
+ * falls back to DEFAULT_SITE.
+ */
+export async function getPublicBackendBaseUrl(): Promise<string> {
+  const token = await readJwt();
+  const site = isSiteId(token?.site) ? token.site : DEFAULT_SITE;
+  return getSiteApiUrl(site);
 }

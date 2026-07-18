@@ -2,6 +2,7 @@
 
 import type { Package } from "../types";
 import { logPortalServerEvent } from "@/lib/server-log";
+import { getPublicBackendBaseUrl } from "@/lib/auth";
 
 export async function getAvailablePackages(): Promise<Package[]> {
   try {
@@ -143,11 +144,9 @@ export async function requestPackageChange(
 
 export async function getCompanyName(): Promise<string> {
   try {
-    if (!process.env.API_URL) {
-      return "WiFi Portal";
-    }
+    const baseUrl = await getPublicBackendBaseUrl();
 
-    const response = await fetch(`${process.env.API_URL}/api/wifi-name`, {
+    const response = await fetch(`${baseUrl}/api/wifi-name`, {
       next: { revalidate: 3600 },
     });
     const data = (await response.json().catch(() => null)) as {

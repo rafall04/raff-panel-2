@@ -5,7 +5,7 @@
  */
 
 import { serverApiClient } from "@/lib/api-server";
-import { getBackendAccessToken } from "@/lib/auth";
+import { getBackendContext } from "@/lib/auth";
 import type { ApiResponse } from "@/types/api";
 
 const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
@@ -225,13 +225,8 @@ export class ReportService {
       };
     }
 
-    const apiUrl = process.env.API_URL;
-    if (!apiUrl) {
-      return { success: false, message: "API URL is not configured" };
-    }
-
-    const token = await getBackendAccessToken();
-    if (!token) {
+    const ctx = await getBackendContext();
+    if (!ctx) {
       return { success: false, message: "Unauthorized" };
     }
 
@@ -240,11 +235,11 @@ export class ReportService {
     formData.append("photo", photoFile);
 
     const response = await fetch(
-      `${apiUrl}/api/customer/reports/upload-photo`,
+      `${ctx.baseUrl}/api/customer/reports/upload-photo`,
       {
         method: "POST",
         // Content-Type is intentionally omitted: fetch derives the multipart boundary.
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${ctx.token}` },
         body: formData,
         cache: "no-store",
       },

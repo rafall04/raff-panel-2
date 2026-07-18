@@ -4,7 +4,7 @@
  */
 
 import type { ApiResponse, RequestOptions } from "@/types/api";
-import { getAuthSession, getBackendAccessToken } from "@/lib/auth";
+import { getBackendContext, getPublicBackendBaseUrl } from "@/lib/auth";
 
 class ServerApiError extends Error {
   constructor(
@@ -35,31 +35,27 @@ class ServerApiError extends Error {
 const DEFAULT_TIMEOUT_MS = 15000;
 
 class ServerApiClient {
-  private baseURL: string;
-
-  constructor() {
-    this.baseURL = process.env.API_URL || "";
-
-    if (!this.baseURL) {
-      console.error("FATAL: API_URL environment variable is not set.");
-    }
-  }
-
   /**
-   * Get authentication headers from session
+   * Resolve the backend base URL and auth headers for a single request.
+   *
+   * The base URL is per-request, not a constructor constant: this panel is
+   * multi-tenant, so which raf-bot-v2 to hit depends on the caller's session
+   * (its pinned `site`). Authenticated calls read both site and token from the
+   * JWT in one shot; public calls (`requireAuth: false`) resolve the site from
+   * the session when present, else the pre-login preferred site.
    */
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    const session = await getAuthSession();
-    if (!session) {
-      throw new ServerApiError(
-        "User not authenticated: session is null",
-        401,
-        "UNAUTHORIZED",
-      );
+  private async resolveRequest(
+    requireAuth: boolean,
+  ): Promise<{ baseUrl: string; headers: HeadersInit }> {
+    if (!requireAuth) {
+      return {
+        baseUrl: await getPublicBackendBaseUrl(),
+        headers: { "Content-Type": "application/json" },
+      };
     }
-    const token = await getBackendAccessToken();
 
-    if (!token) {
+    const ctx = await getBackendContext();
+    if (!ctx) {
       throw new ServerApiError(
         "User not authenticated or token not found",
         401,
@@ -68,8 +64,11 @@ class ServerApiClient {
     }
 
     return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      baseUrl: ctx.baseUrl,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ctx.token}`,
+      },
     };
   }
 
@@ -173,7 +172,18 @@ class ServerApiClient {
     endpoint: string,
     options: RequestOptions = {},
   ): Promise<ApiResponse<T>> {
-    if (!this.baseURL) {
+    let baseUrl: string;
+    let headers: HeadersInit;
+    try {
+      ({ baseUrl, headers } = await this.resolveRequest(
+        options.requireAuth !== false,
+      ));
+    } catch (error) {
+      if (error instanceof ServerApiError) {
+        throw error;
+      }
+      // getSiteApiUrl throws when a site's URL is unconfigured — a deploy
+      // misconfiguration. Surface as 500 without echoing the internal host.
       throw new ServerApiError(
         "API URL is not configured",
         500,
@@ -181,14 +191,7 @@ class ServerApiClient {
       );
     }
 
-    const url = `${this.baseURL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
-    const headers =
-      options.requireAuth !== false
-        ? await this.getAuthHeaders()
-        : {
-            "Content-Type": "application/json",
-            ...options.headers,
-          };
+    const url = `${baseUrl}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
     const timeoutMs = options.timeout ?? DEFAULT_TIMEOUT_MS;
     const controller = new AbortController();

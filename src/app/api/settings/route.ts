@@ -1,15 +1,19 @@
 import { routeSuccess } from "@/lib/route-response";
 import { logPortalServerEvent } from "@/lib/server-log";
+import { getPublicBackendBaseUrl } from "@/lib/auth";
 
 export async function GET() {
-  if (!process.env.API_URL) {
+  let baseUrl: string;
+  try {
+    baseUrl = await getPublicBackendBaseUrl();
+  } catch {
     return routeSuccess({ companyName: "WiFi Portal" }, undefined, {
       cache: "revalidate",
     });
   }
 
   try {
-    const response = await fetch(`${process.env.API_URL}/api/wifi-name`, {
+    const response = await fetch(`${baseUrl}/api/wifi-name`, {
       next: { revalidate: 3600 },
       headers: {
         "Content-Type": "application/json",

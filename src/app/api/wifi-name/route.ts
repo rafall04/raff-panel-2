@@ -1,14 +1,21 @@
 import { routeError, routeSuccess } from "@/lib/route-response";
 import { logPortalServerEvent } from "@/lib/server-log";
+import { getPublicBackendBaseUrl } from "@/lib/auth";
 
 /**
  * Public endpoint untuk mendapatkan WiFi name dari config
  * Endpoint: GET /api/wifi-name
  * Authentication: Tidak diperlukan (public endpoint)
  * Response format: { status: 200, message: "...", data: { wifiName: "..." } }
+ *
+ * Multi-tenant: the site comes from the session's `site` claim when logged in
+ * (the dashboard calls this), else the pre-login preferred site.
  */
 export async function GET() {
-  if (!process.env.API_URL) {
+  let baseUrl: string;
+  try {
+    baseUrl = await getPublicBackendBaseUrl();
+  } catch {
     return routeError("Server configuration error.", {
       status: 500,
       event: "wifi_name_config_error",
@@ -18,15 +25,12 @@ export async function GET() {
   }
 
   try {
-    const backendResponse = await fetch(
-      `${process.env.API_URL}/api/wifi-name`,
-      {
-        next: { revalidate: 3600 }, // Cache for 1 hour, as this likely doesn't change often
-        headers: {
-          "Content-Type": "application/json",
-        },
+    const backendResponse = await fetch(`${baseUrl}/api/wifi-name`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour, as this likely doesn't change often
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     if (!backendResponse.ok) {
       return routeError("Failed to fetch wifi name from backend.", {

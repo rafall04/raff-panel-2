@@ -25,6 +25,7 @@ import {
   Phone,
   MapPin,
   Info,
+  ChevronRight,
 } from "lucide-react";
 import PhoneNumbersManagement from "../phone-numbers";
 import { PageHeader } from "@/components/ui/page-header";
@@ -125,6 +126,8 @@ export default function SettingsView({
   const [isRebootDialogOpen, setRebootDialogOpen] = useState(false);
   const [isPackageListOpen, setPackageListOpen] = useState(false);
   const [isPackageConfirmOpen, setPackageConfirmOpen] = useState(false);
+  const [isUsernameDialogOpen, setUsernameDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   const currentPackageName =
     currentCustomerInfo.package || currentCustomerInfo.packageName || "N/A";
@@ -159,6 +162,7 @@ export default function SettingsView({
       success: (result) => {
         setUsernameCurrentPw("");
         setNewUsername("");
+        setUsernameDialogOpen(false);
         return result.message || "Nama pengguna berhasil diperbarui!";
       },
       error: (err) => err.message || "Gagal memperbarui nama pengguna.",
@@ -192,6 +196,7 @@ export default function SettingsView({
         setPasswordCurrentPw("");
         setNewPassword("");
         setConfirmNewPassword("");
+        setPasswordDialogOpen(false);
         return result.message || "Kata sandi berhasil diperbarui!";
       },
       error: (err) => err.message || "Gagal memperbarui kata sandi.",
@@ -400,104 +405,151 @@ export default function SettingsView({
             butuh kata sandi Anda saat ini.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Change username */}
-          <form onSubmit={handleUpdateUsername} className="space-y-3">
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <AtSign className="h-4 w-4 text-brand" /> Ubah Nama Pengguna
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="username-current-pw">Kata Sandi Saat Ini</Label>
-              <Input
-                id="username-current-pw"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Masukkan kata sandi Anda saat ini"
-                value={usernameCurrentPw}
-                onChange={(e) => setUsernameCurrentPw(e.target.value)}
-              />
+        <CardContent className="space-y-3">
+          <div className="tile flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <AtSign className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Nama Pengguna
+              </p>
+              <p className="truncate font-semibold">
+                {currentCustomerInfo.username || "—"}
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-username">Nama Pengguna Baru</Label>
-              <Input
-                id="new-username"
-                type="text"
-                autoComplete="username"
-                placeholder="Nama pengguna baru"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="outline"
-              disabled={usernameLoading}
-              className="w-full sm:w-auto"
-            >
-              {usernameLoading ? (
-                <LoaderCircle className="mr-2 animate-spin" />
-              ) : (
-                <Check className="mr-2" />
-              )}
-              Simpan Nama Pengguna
-            </Button>
-          </form>
+          </div>
 
-          <div className="border-t" />
+          {/* Change username (dialog) */}
+          <Dialog
+            open={isUsernameDialogOpen}
+            onOpenChange={setUsernameDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <span className="flex items-center gap-2">
+                  <AtSign className="h-4 w-4" /> Ubah Nama Pengguna
+                </span>
+                <ChevronRight className="h-4 w-4 opacity-60" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Ubah Nama Pengguna</DialogTitle>
+                <DialogDescription>
+                  Butuh kata sandi Anda saat ini untuk verifikasi.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleUpdateUsername} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username-current-pw">
+                    Kata Sandi Saat Ini
+                  </Label>
+                  <Input
+                    id="username-current-pw"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Masukkan kata sandi Anda saat ini"
+                    value={usernameCurrentPw}
+                    onChange={(e) => setUsernameCurrentPw(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-username">Nama Pengguna Baru</Label>
+                  <Input
+                    id="new-username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="Nama pengguna baru"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={usernameLoading}>
+                    {usernameLoading ? (
+                      <LoaderCircle className="mr-2 animate-spin" />
+                    ) : (
+                      <Check className="mr-2" />
+                    )}
+                    Simpan
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
-          {/* Change password */}
-          <form onSubmit={handleUpdatePassword} className="space-y-3">
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <KeyRound className="h-4 w-4 text-brand" /> Ubah Kata Sandi
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="password-current-pw">Kata Sandi Saat Ini</Label>
-              <Input
-                id="password-current-pw"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Masukkan kata sandi Anda saat ini"
-                value={passwordCurrentPw}
-                onChange={(e) => setPasswordCurrentPw(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Kata Sandi Baru</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Kata sandi baru"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Konfirmasi Kata Sandi</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Ulangi kata sandi baru"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button
-              type="submit"
-              disabled={passwordLoading}
-              className="w-full sm:w-auto"
-            >
-              {passwordLoading ? (
-                <LoaderCircle className="mr-2 animate-spin" />
-              ) : (
-                <Check className="mr-2" />
-              )}
-              Simpan Kata Sandi
-            </Button>
-          </form>
+          {/* Change password (dialog) */}
+          <Dialog
+            open={isPasswordDialogOpen}
+            onOpenChange={setPasswordDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <span className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4" /> Ubah Kata Sandi
+                </span>
+                <ChevronRight className="h-4 w-4 opacity-60" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Ubah Kata Sandi</DialogTitle>
+                <DialogDescription>
+                  Butuh kata sandi Anda saat ini untuk verifikasi.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password-current-pw">
+                    Kata Sandi Saat Ini
+                  </Label>
+                  <Input
+                    id="password-current-pw"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Masukkan kata sandi Anda saat ini"
+                    value={passwordCurrentPw}
+                    onChange={(e) => setPasswordCurrentPw(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Kata Sandi Baru</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Kata sandi baru"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">
+                    Konfirmasi Kata Sandi
+                  </Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Ulangi kata sandi baru"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={passwordLoading}>
+                    {passwordLoading ? (
+                      <LoaderCircle className="mr-2 animate-spin" />
+                    ) : (
+                      <Check className="mr-2" />
+                    )}
+                    Simpan
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 

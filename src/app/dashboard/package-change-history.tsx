@@ -9,6 +9,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { PackageChangeRequest } from "@/services/package-change.service";
 import { Loader2, Package, Calendar, User, FileText } from "lucide-react";
 
@@ -116,7 +117,12 @@ export default function PackageChangeHistory() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Permintaan Perubahan Paket</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Package className="h-5 w-5" />
+            </span>
+            Riwayat Perubahan Paket
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -130,7 +136,12 @@ export default function PackageChangeHistory() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Permintaan Perubahan Paket</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Package className="h-5 w-5" />
+            </span>
+            Riwayat Perubahan Paket
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -145,18 +156,22 @@ export default function PackageChangeHistory() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Permintaan Perubahan Paket</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Package className="h-5 w-5" />
+            </span>
+            Riwayat Perubahan Paket
+          </CardTitle>
           <CardDescription>
             Riwayat semua permintaan perubahan paket Anda
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
-              Belum ada riwayat permintaan perubahan paket.
-            </p>
-          </div>
+          <EmptyState
+            icon={Package}
+            title="Belum ada riwayat"
+            description="Permintaan perubahan paket Anda akan muncul di sini."
+          />
         </CardContent>
       </Card>
     );
@@ -165,7 +180,12 @@ export default function PackageChangeHistory() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Riwayat Permintaan Perubahan Paket</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <span className="icon-chip">
+            <Package className="h-5 w-5" />
+          </span>
+          Riwayat Perubahan Paket
+        </CardTitle>
         <CardDescription>
           Riwayat semua permintaan perubahan paket Anda
         </CardDescription>

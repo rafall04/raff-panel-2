@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { PhoneNumbersResponse } from "@/services/phone.service";
 import { Loader2, Phone, Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -176,7 +177,12 @@ export default function PhoneNumbersManagement() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Nomor HP Terdaftar</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Phone className="h-5 w-5" />
+            </span>
+            Nomor HP Terdaftar
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -192,7 +198,12 @@ export default function PhoneNumbersManagement() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Nomor HP Terdaftar</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Phone className="h-5 w-5" />
+            </span>
+            Nomor HP Terdaftar
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -208,7 +219,12 @@ export default function PhoneNumbersManagement() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Nomor HP Terdaftar</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Phone className="h-5 w-5" />
+            </span>
+            Nomor HP Terdaftar
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
@@ -224,8 +240,10 @@ export default function PhoneNumbersManagement() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Phone className="mr-2 h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <span className="icon-chip">
+            <Phone className="h-5 w-5" />
+          </span>
           Nomor HP Terdaftar
         </CardTitle>
         <CardDescription>
@@ -269,9 +287,11 @@ export default function PhoneNumbersManagement() {
               ))}
             </ul>
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              Belum ada nomor HP terdaftar.
-            </div>
+            <EmptyState
+              icon={Phone}
+              title="Belum ada nomor HP"
+              description="Tambahkan nomor HP untuk menerima notifikasi & OTP."
+            />
           )}
         </div>
 

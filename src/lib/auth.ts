@@ -222,23 +222,17 @@ export const getAuthSession = () => getServerSession(authOptions);
  */
 async function readJwt() {
   const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map(
-      (cookie: { name: string; value: string }) =>
-        `${cookie.name}=${cookie.value}`,
-    )
-    .join("; ");
 
-  if (!cookieHeader) {
-    return null;
-  }
-
+  // getToken reads cookies from `req.cookies` — its SessionStore ignores a raw
+  // `headers.cookie` string entirely. Passing the header worked in dev but
+  // returned null in production, where the session cookie is the `__Secure-`
+  // prefixed HTTPS variant; every authenticated backend call then 401'd with
+  // "User not authenticated". Hand getToken the cookie jar itself: the store
+  // from `cookies()` exposes the `getAll()` shape SessionStore expects.
   return getToken({
     req: {
-      headers: {
-        cookie: cookieHeader,
-      },
+      cookies: cookieStore,
+      headers: {},
     } as never,
     secret: process.env.NEXTAUTH_SECRET,
   });

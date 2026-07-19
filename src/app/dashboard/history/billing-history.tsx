@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import type { BillingHistoryItem } from "@/services/billing.service";
-import { Loader2, Receipt, ArrowDownCircle } from "lucide-react";
+import { Receipt, ArrowDownCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 
 const MONTHS = [
   "",
@@ -61,12 +62,7 @@ export default function BillingHistory() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10 text-muted-foreground">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Memuat riwayat
-        tagihan...
-      </div>
-    );
+    return <ListSkeleton />;
   }
   if (error) {
     return (

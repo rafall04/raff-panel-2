@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import BottomNav from "./bottom.nav";
 import ReportForm from "./report.form";
 import { MessageSquareWarning, Router } from "lucide-react";
@@ -23,6 +24,7 @@ function DashboardContent({
   children: React.ReactNode;
 }) {
   const { isOpen, closeDialog } = useReportDialog();
+  const pathname = usePathname();
 
   return (
     <>
@@ -42,7 +44,12 @@ function DashboardContent({
         </header>
 
         <main className="mx-auto w-full max-w-6xl flex-grow px-4 py-6 pb-28 sm:px-6 lg:px-8">
-          {children}
+          <div
+            key={pathname}
+            className="duration-300 animate-in fade-in-0 slide-in-from-bottom-2"
+          >
+            {children}
+          </div>
         </main>
 
         <BottomNav />

@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import type { PackageChangeRequest } from "@/services/package-change.service";
-import { Loader2, Package, Calendar, User, FileText } from "lucide-react";
+import { Package, Calendar, User, FileText } from "lucide-react";
 
 // Helper function untuk format currency
 const formatCurrency = (amount: number): string => {
@@ -124,9 +125,8 @@ export default function PackageChangeHistory() {
             Riwayat Perubahan Paket
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Memuat riwayat...</span>
+        <CardContent>
+          <ListSkeleton rows={2} />
         </CardContent>
       </Card>
     );

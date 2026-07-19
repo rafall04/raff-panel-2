@@ -59,6 +59,22 @@ export default function View({
   const [loading, setLoading] = useState<boolean>(false);
   const { isEnabled: isSpeedOnDemandEnabled } = useSpeedOnDemand();
 
+  // Time-based greeting. Computed client-side (in an effect) to avoid a
+  // server/client hydration mismatch on the hour.
+  const [greeting, setGreeting] = useState("Selamat datang");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(
+      h < 11
+        ? "Selamat pagi"
+        : h < 15
+          ? "Selamat siang"
+          : h < 19
+            ? "Selamat sore"
+            : "Selamat malam",
+    );
+  }, []);
+
   // Effect for real-time data refresh
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -124,7 +140,7 @@ export default function View({
           <div className="relative border-b bg-gradient-to-br from-brand/10 via-transparent to-transparent p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">Selamat datang,</p>
+                <p className="text-sm text-muted-foreground">{greeting},</p>
                 <p className="truncate text-xl font-bold">
                   {customerInfo?.name || "Pelanggan"}
                 </p>

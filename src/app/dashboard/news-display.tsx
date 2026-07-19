@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { Newspaper } from "lucide-react";
 
 interface NewsItem {
   id: string;
@@ -100,7 +103,7 @@ export default function NewsDisplay() {
   }, []);
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Memuat berita...</p>;
+    return <ListSkeleton rows={2} trailing={false} />;
   }
 
   if (error) {
@@ -113,18 +116,20 @@ export default function NewsDisplay() {
 
   if (news.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Tidak ada berita atau promo saat ini.
-      </p>
+      <EmptyState
+        icon={Newspaper}
+        title="Belum ada berita"
+        description="Berita dan promo terbaru akan muncul di sini."
+      />
     );
   }
 
   return (
     <div className="space-y-4">
       {news.map((item) => (
-        <div key={item.id} className="p-4 border rounded-lg bg-card">
+        <div key={item.id} className="tile">
           <h4 className="font-semibold">{item.title}</h4>
-          <p className="text-sm text-muted-foreground mt-1">{item.content}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{item.content}</p>
           {item.createdAt && (
             <p className="text-xs text-muted-foreground mt-2">
               {formatDate(item.createdAt)}

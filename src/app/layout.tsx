@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -22,11 +22,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e17" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f7fb" },
+  ],
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const companyName = await getCompanyName();
   return {
     title: companyName,
-    description: `${companyName} Wifi Portal`,
+    description: `${companyName} — Portal Pelanggan`,
+    applicationName: companyName,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: companyName,
+    },
   };
 }
 
@@ -47,7 +60,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster />
+          <Toaster position="top-center" richColors closeButton />
         </ThemeProvider>
       </body>
     </html>

@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import type { PhoneNumbersResponse } from "@/services/phone.service";
 import { Loader2, Phone, Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -184,11 +185,8 @@ export default function PhoneNumbersManagement() {
             Nomor HP Terdaftar
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">
-            Memuat daftar nomor HP...
-          </span>
+        <CardContent>
+          <ListSkeleton rows={2} trailing={false} />
         </CardContent>
       </Card>
     );

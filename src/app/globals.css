@@ -4,7 +4,8 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    /* Soft blue-grey so white cards visibly elevate above the page. */
+    --background: 214 32% 95%;
     --foreground: 222.2 47% 11%;
 
     --card: 0 0% 100%;
@@ -16,26 +17,26 @@
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 94%;
+    --secondary: 214 30% 92%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 94.5%;
-    --muted-foreground: 215.4 16.3% 42%;
+    --muted: 214 30% 92%;
+    --muted-foreground: 215.4 16.3% 40%;
 
-    --accent: 210 40% 94%;
+    --accent: 214 30% 92%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 152 60% 36%;
+    --success: 152 62% 34%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 35 92% 45%;
+    --warning: 35 92% 42%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214.3 28% 88%;
-    --input: 214.3 28% 88%;
+    --border: 214 25% 86%;
+    --input: 214 25% 86%;
     --ring: 200 95% 42%;
 
     /* Brand accent — RAF NET azure. Used for highlights, active nav, key figures. */

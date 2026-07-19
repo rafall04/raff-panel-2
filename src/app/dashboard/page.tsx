@@ -3,7 +3,8 @@ import ClientView from "./client.view";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { logPortalServerEvent } from "@/lib/server-log";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { WifiOff, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -25,17 +26,15 @@ export default async function Page() {
 
     if (!ssidInfo) {
       return (
-        <div className="w-full min-h-[100dvh] flex items-center justify-center p-4">
+        <div className="flex min-h-[70vh] w-full items-center justify-center">
           {/* Deliberately does NOT blame the customer's connection: they reached
               this page, so their internet works. The cause is on our side. */}
-          <Alert variant="destructive" className="max-w-lg">
-            <AlertTitle>Data perangkat belum bisa ditampilkan</AlertTitle>
-            <AlertDescription>
-              Kami sedang tidak bisa mengambil data perangkat Anda. Coba muat
-              ulang halaman ini beberapa saat lagi. Kalau terus berulang,
-              hubungi admin lewat WhatsApp.
-            </AlertDescription>
-          </Alert>
+          <EmptyState
+            icon={WifiOff}
+            title="Data perangkat belum bisa ditampilkan"
+            description="Kami sedang tidak bisa mengambil data perangkat Anda. Coba muat ulang halaman ini beberapa saat lagi. Kalau terus berulang, hubungi admin lewat WhatsApp."
+            className="max-w-md"
+          />
         </div>
       );
     }
@@ -61,14 +60,13 @@ export default async function Page() {
     }
 
     return (
-      <div className="w-full min-h-[100dvh] flex items-center justify-center p-4">
-        <Alert variant="destructive" className="max-w-lg">
-          <AlertTitle>Halaman gagal dimuat</AlertTitle>
-          <AlertDescription>
-            Terjadi kendala saat memuat dasbor Anda. Silakan muat ulang halaman
-            ini beberapa saat lagi.
-          </AlertDescription>
-        </Alert>
+      <div className="flex min-h-[70vh] w-full items-center justify-center">
+        <EmptyState
+          icon={AlertTriangle}
+          title="Halaman gagal dimuat"
+          description="Terjadi kendala saat memuat dasbor Anda. Silakan muat ulang halaman ini beberapa saat lagi."
+          className="max-w-md"
+        />
       </div>
     );
   }

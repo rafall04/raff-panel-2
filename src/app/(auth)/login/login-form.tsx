@@ -10,6 +10,8 @@ import {
   Router,
   Pencil,
   RotateCw,
+  CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { requestOtp } from "@/utils/auth.server";
 import { toast } from "sonner";
@@ -200,25 +202,58 @@ export default function LoginForm({
   };
 
   return (
-    <main className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col items-center justify-center p-12 bg-muted/40">
-        <div className="max-w-md text-center">
-          <Router className="h-24 w-24 mx-auto mb-6 text-primary" />
-          <h1 className="text-5xl font-bold mb-4">{companyName}</h1>
-          <p className="text-xl text-muted-foreground">
+    <main className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-2">
+      {/* Desktop brand panel */}
+      <div className="relative hidden overflow-hidden bg-brand-gradient p-12 text-brand-foreground lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-16 h-80 w-80 rounded-full bg-black/10 blur-3xl" />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-inset ring-white/25">
+            <Router className="h-6 w-6" />
+          </span>
+          <span className="text-lg font-semibold">{companyName}</span>
+        </div>
+        <div className="relative max-w-md">
+          <h1 className="text-4xl font-bold leading-tight">
+            Portal Pelanggan {companyName}
+          </h1>
+          <p className="mt-4 text-lg text-brand-foreground/80">
             Kelola layanan internet Anda dengan mudah — WiFi, tagihan, dan
             laporan gangguan dalam satu tempat.
           </p>
+          <ul className="mt-8 space-y-3 text-sm">
+            <li className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              Pantau status koneksi &amp; perangkat secara real-time
+            </li>
+            <li className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              Cek tagihan, paket, dan riwayat dalam satu tempat
+            </li>
+            <li className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              Kelola WiFi &amp; laporkan gangguan kapan saja
+            </li>
+          </ul>
         </div>
+        <p className="relative text-sm text-brand-foreground/70">
+          © {new Date().getFullYear()} {companyName}
+        </p>
       </div>
 
+      {/* Form panel */}
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           {/* The desktop panel is hidden below lg, so without this the whole
               brand disappears on exactly the devices most customers use. */}
-          <div className="flex flex-col items-center text-center mb-6 lg:hidden">
-            <Router className="h-12 w-12 mb-3 text-primary" />
+          <div className="mb-8 flex flex-col items-center text-center lg:hidden">
+            <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-gradient text-brand-foreground shadow-brand-glow">
+              <Router className="h-8 w-8" />
+            </span>
             <h1 className="text-2xl font-bold">{companyName}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Masuk ke portal pelanggan Anda
+            </p>
           </div>
 
           {reason === "session-expired" && (
@@ -231,8 +266,14 @@ export default function LoginForm({
 
           <Tabs defaultValue="otp" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="otp">WhatsApp</TabsTrigger>
-              <TabsTrigger value="password">Password</TabsTrigger>
+              <TabsTrigger value="otp">
+                <Smartphone className="mr-2 h-4 w-4" />
+                WhatsApp
+              </TabsTrigger>
+              <TabsTrigger value="password">
+                <Key className="mr-2 h-4 w-4" />
+                Password
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="otp">
@@ -429,6 +470,11 @@ export default function LoginForm({
               </Card>
             </TabsContent>
           </Tabs>
+
+          <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Koneksi aman. Butuh bantuan? Hubungi admin lewat WhatsApp.
+          </p>
         </div>
       </div>
     </main>

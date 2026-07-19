@@ -1,16 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { CustomerInfo } from "./actions";
-import {
-  User,
-  Package,
-  CircleDollarSign,
-  Calendar,
-  ShieldCheck,
-  MapPin,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { User, Package, Calendar, ShieldCheck, MapPin } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const PaymentStatusBadge = ({ status }: { status?: string | null }) => {
   // If status is null/undefined, don't render anything (feature is hidden)
@@ -19,23 +15,42 @@ const PaymentStatusBadge = ({ status }: { status?: string | null }) => {
   }
 
   const statusUpper = status.toUpperCase();
-  let variant: "default" | "secondary" | "destructive" | "outline" =
-    "secondary";
   if (statusUpper === "PAID") {
-    variant = "default";
-  } else if (statusUpper === "UNPAID") {
-    variant = "destructive";
+    return (
+      <Badge className="border-transparent bg-success text-success-foreground hover:bg-success">
+        {status}
+      </Badge>
+    );
   }
-
-  return (
-    <Badge
-      variant={variant}
-      className={`${statusUpper === "PAID" ? "bg-green-600" : ""}`}
-    >
-      {status}
-    </Badge>
-  );
+  if (statusUpper === "UNPAID") {
+    return <Badge variant="destructive">{status}</Badge>;
+  }
+  return <Badge variant="secondary">{status}</Badge>;
 };
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <div className="text-sm font-medium">{value}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function CustomerView({
   customerInfo,
@@ -46,13 +61,19 @@ export default function CustomerView({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Customer Information</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <User className="h-5 w-5" />
+            </span>
+            Langganan &amp; Tagihan
+          </CardTitle>
         </CardHeader>
-        <CardContent className="text-center text-muted-foreground">
-          <p>No customer data available.</p>
-          <p className="text-xs">
-            Please ensure the backend API is configured correctly.
-          </p>
+        <CardContent>
+          <EmptyState
+            icon={User}
+            title="Data pelanggan tidak tersedia"
+            description="Kami belum bisa mengambil detail akun Anda. Coba muat ulang beberapa saat lagi."
+          />
         </CardContent>
       </Card>
     );
@@ -61,75 +82,64 @@ export default function CustomerView({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <User size={20} className="mr-2" />
-          Customer Information
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <span className="icon-chip">
+            <User className="h-5 w-5" />
+          </span>
+          Langganan &amp; Tagihan
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-start">
-          <User size={16} className="mr-3 text-muted-foreground mt-1" />
-          <div>
-            <p className="font-semibold text-muted-foreground text-sm">Name</p>
-            <p>{customerInfo.name || "N/A"}</p>
-          </div>
-        </div>
-        <div className="flex items-start">
-          <Package size={16} className="mr-3 text-muted-foreground mt-1" />
-          <div>
-            <p className="font-semibold text-muted-foreground text-sm">
-              Package
-            </p>
-            <p>{customerInfo.package || customerInfo.packageName || "N/A"}</p>
-          </div>
-        </div>
-        <div className="flex items-start">
-          <CircleDollarSign
-            size={16}
-            className="mr-3 text-muted-foreground mt-1"
-          />
-          <div>
-            <p className="font-semibold text-muted-foreground text-sm">
-              Monthly Bill
-            </p>
-            <p>{customerInfo.monthlyBillFormatted || "N/A"}</p>
-          </div>
-        </div>
-        {/* Conditional display: Due Date - only show if dueDateFormatted is not null */}
-        {customerInfo.dueDateFormatted && (
-          <div className="flex items-start">
-            <Calendar size={16} className="mr-3 text-muted-foreground mt-1" />
-            <div>
-              <p className="font-semibold text-muted-foreground text-sm">
-                Due Date
+        {/* Highlighted plan */}
+        <div className="rounded-xl border border-brand/20 bg-brand/10 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+                Paket Anda
               </p>
-              <p>{customerInfo.dueDateFormatted}</p>
+              <p className="mt-1 truncate text-lg font-bold">
+                {customerInfo.package || customerInfo.packageName || "N/A"}
+              </p>
+              {customerInfo.monthlyBillFormatted && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {customerInfo.monthlyBillFormatted}
+                  </span>{" "}
+                  / bulan
+                </p>
+              )}
             </div>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-brand-foreground shadow-brand-glow">
+              <Package className="h-5 w-5" />
+            </span>
           </div>
-        )}
-        {/* Conditional display: Payment Status - only show if paymentStatus is not null */}
-        {customerInfo.paymentStatus && (
-          <div className="flex items-start">
-            <ShieldCheck
-              size={16}
-              className="mr-3 text-muted-foreground mt-1"
+        </div>
+
+        {/* Details */}
+        <div className="space-y-3">
+          {customerInfo.dueDateFormatted && (
+            <InfoRow
+              icon={Calendar}
+              label="Jatuh Tempo"
+              value={customerInfo.dueDateFormatted}
             />
-            <div>
-              <p className="font-semibold text-muted-foreground text-sm">
-                Payment Status
-              </p>
-              <PaymentStatusBadge status={customerInfo.paymentStatus} />
-            </div>
-          </div>
-        )}
-        <div className="flex items-start">
-          <MapPin size={16} className="mr-3 text-muted-foreground mt-1" />
-          <div>
-            <p className="font-semibold text-muted-foreground text-sm">
-              Address
-            </p>
-            <p className="whitespace-normal">{customerInfo.address || "N/A"}</p>
-          </div>
+          )}
+          {customerInfo.paymentStatus && (
+            <InfoRow
+              icon={ShieldCheck}
+              label="Status Pembayaran"
+              value={<PaymentStatusBadge status={customerInfo.paymentStatus} />}
+            />
+          )}
+          <InfoRow
+            icon={MapPin}
+            label="Alamat"
+            value={
+              <span className="whitespace-normal">
+                {customerInfo.address || "—"}
+              </span>
+            }
+          />
         </div>
       </CardContent>
     </Card>

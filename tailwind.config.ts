@@ -52,11 +52,33 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
+          2: "hsl(var(--brand-2))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+      },
+      boxShadow: {
+        card: "0 1px 2px 0 hsl(222 47% 3% / 0.10), 0 8px 24px -12px hsl(222 47% 3% / 0.35)",
+        "brand-glow": "0 10px 30px -10px hsl(var(--brand) / 0.45)",
+      },
+      backgroundImage: {
+        "brand-gradient":
+          "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))",
       },
       keyframes: {
         "accordion-down": {

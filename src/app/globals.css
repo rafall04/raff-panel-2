@@ -4,65 +4,86 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222.2 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222.2 47% 11%;
 
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 40% 94%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 94.5%;
+    --muted-foreground: 215.4 16.3% 42%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 210 40% 94%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --warning: 35 92% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214.3 28% 88%;
+    --input: 214.3 28% 88%;
+    --ring: 200 95% 42%;
+
+    /* Brand accent — RAF NET azure. Used for highlights, active nav, key figures. */
+    --brand: 200 95% 42%;
+    --brand-foreground: 0 0% 100%;
+    --brand-2: 190 90% 45%;
+
+    --radius: 0.85rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 5.5%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222 33% 9.5%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 33% 10.5%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217 30% 16%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 30% 15%;
+    --muted-foreground: 215 20% 68%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217 30% 18%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 210 40% 98%;
+    --success: 152 66% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 95% 55%;
+    --warning-foreground: 20 40% 10%;
+
+    --border: 217 25% 19%;
+    --input: 217 25% 19%;
+    --ring: 200 98% 52%;
+
+    --brand: 200 98% 52%;
+    --brand-foreground: 222 47% 8%;
+    --brand-2: 187 92% 52%;
   }
 }
 
@@ -72,5 +93,42 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Subtle depth: a soft brand glow anchored top-center, fixed so it doesn't scroll. */
+    background-image: radial-gradient(
+      120% 55% at 50% -10%,
+      hsl(var(--brand) / 0.1),
+      transparent 60%
+    );
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Nested stat/info tile inside a card — one step of contrast above the card.
+     Raw hsl(var()/alpha) rather than @apply-with-opacity, which Tailwind cannot
+     resolve for custom colors inside @apply. */
+  .tile {
+    @apply rounded-xl border p-4;
+    background-color: hsl(var(--muted) / 0.4);
+  }
+
+  /* Rounded square that holds a lucide icon, tinted with the brand accent. */
+  .icon-chip {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
+    background-color: hsl(var(--brand) / 0.12);
+    color: hsl(var(--brand));
+    box-shadow: inset 0 0 0 1px hsl(var(--brand) / 0.22);
+  }
+
+  /* Brand gradient text for hero figures / logotype. */
+  .text-gradient-brand {
+    background-image: linear-gradient(
+      to right,
+      hsl(var(--brand)),
+      hsl(var(--brand-2))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }

@@ -36,9 +36,9 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background/80 backdrop-blur-lg border-t">
+    <div className="fixed bottom-0 left-0 z-50 w-full border-t border-border/60 bg-background/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
       <div
-        className="grid h-full max-w-lg mx-auto font-medium"
+        className="mx-auto grid h-16 w-full max-w-lg font-medium"
         style={{
           gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
         }}
@@ -49,18 +49,25 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="inline-flex flex-col items-center justify-center px-5 hover:bg-muted/50 group rounded-lg"
+              aria-current={isActive ? "page" : undefined}
+              className="group relative flex flex-col items-center justify-center gap-1"
             >
-              <item.icon
-                className={cn(
-                  "w-6 h-6 mb-1 text-muted-foreground group-hover:text-foreground",
-                  isActive && "text-primary",
-                )}
-              />
               <span
                 className={cn(
-                  "text-sm text-muted-foreground group-hover:text-foreground",
-                  isActive && "text-primary",
+                  "flex h-8 w-14 items-center justify-center rounded-full transition-all duration-200",
+                  isActive
+                    ? "bg-brand/15 text-brand"
+                    : "text-muted-foreground group-hover:text-foreground group-active:scale-90",
+                )}
+              >
+                <item.icon className="h-[22px] w-[22px]" />
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-medium leading-none transition-colors",
+                  isActive
+                    ? "text-brand"
+                    : "text-muted-foreground group-hover:text-foreground",
                 )}
               >
                 {item.label}

@@ -3,7 +3,7 @@
 import React from "react";
 import BottomNav from "./bottom.nav";
 import ReportForm from "./report.form";
-import { MessageSquareWarning } from "lucide-react";
+import { MessageSquareWarning, Router } from "lucide-react";
 import { ModeToggle } from "./components/mode-toggle";
 import { useWifiName } from "@/hooks/use-wifi-name";
 import {
@@ -24,16 +24,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="flex flex-col min-h-screen">
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-14 items-center">
-            <div className="flex-1">
-              <p className="font-bold">{companyName}</p>
+        <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-brand-foreground shadow-brand-glow">
+                <Router className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 leading-tight">
+                <p
+                  className={`truncate text-sm font-bold ${loading ? "animate-pulse text-muted-foreground" : ""}`}
+                >
+                  {companyName}
+                </p>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Portal Pelanggan
+                </p>
+              </div>
             </div>
             <ModeToggle />
           </div>
         </header>
 
-        <main className="flex-grow container mx-auto p-6 pb-24">
+        <main className="mx-auto w-full max-w-6xl flex-grow px-4 py-6 pb-28 sm:px-6 lg:px-8">
           {children}
         </main>
 

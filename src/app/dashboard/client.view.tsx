@@ -11,7 +11,17 @@ import { getWifiPageData, refreshObject } from "./actions";
 
 import CustomerView from "./customer.view";
 import StatusView from "./status.view";
-import { RefreshCw } from "lucide-react";
+import {
+  RefreshCw,
+  Clock,
+  Rocket,
+  MonitorSmartphone,
+  Router,
+  Activity,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Newspaper,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +30,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatTile } from "@/components/ui/stat-tile";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import AssociatedDevicesTable from "./associated-devices-table";
 import AnnouncementDisplay from "./announcement-display";
@@ -64,20 +76,20 @@ export default function View({
 
   const refreshSsidInfo = async () => {
     setLoading(true);
-    toast.info("Refreshing data...");
+    toast.info("Memuat ulang data...");
     try {
       await refreshObject();
       const newSsidInfo = await getWifiPageData();
       if (newSsidInfo) {
         setSSIDInfo(newSsidInfo);
-        toast.success("Data refreshed successfully!");
+        toast.success("Data berhasil diperbarui!");
         return;
       }
 
       toast.error("Data perangkat tidak tersedia saat ini.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to refresh data.",
+        error instanceof Error ? error.message : "Gagal memperbarui data.",
       );
     } finally {
       setLoading(false);
@@ -102,18 +114,80 @@ export default function View({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <AnnouncementDisplay />
-      {/* Top Row: Main Status and Customer Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Network Status</CardTitle>
-              <CardDescription>
-                Hello, {customerInfo?.name || "Customer"}!
-              </CardDescription>
+
+      {/* Hero: greeting + live connection status + key stats */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Card className="overflow-hidden lg:col-span-2">
+          <div className="relative border-b bg-gradient-to-br from-brand/10 via-transparent to-transparent p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">Selamat datang,</p>
+                <p className="truncate text-xl font-bold">
+                  {customerInfo?.name || "Pelanggan"}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+                  isOnline
+                    ? "bg-success/15 text-success"
+                    : "bg-destructive/15 text-destructive",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    isOnline
+                      ? "bg-success animate-glow-green"
+                      : "bg-destructive animate-glow-red",
+                  )}
+                />
+                {isOnline ? "Online" : "Offline"}
+              </span>
             </div>
+          </div>
+
+          <CardContent
+            className={cn(
+              "grid grid-cols-2 gap-3 p-4",
+              isSpeedOnDemandEnabled ? "sm:grid-cols-3" : "sm:grid-cols-3",
+            )}
+          >
+            <StatTile
+              icon={Clock}
+              label="Uptime"
+              value={ssidInfo.uptime || "N/A"}
+            />
+            <StatTile
+              icon={MonitorSmartphone}
+              label="Perangkat"
+              value={allDevices.length}
+              hint="terhubung"
+              accent="brand"
+            />
+            {isSpeedOnDemandEnabled ? (
+              <StatTile
+                icon={Rocket}
+                label="Boost"
+                value={dashboardStatus.activeBoost?.profile || "—"}
+                accent={dashboardStatus.activeBoost ? "brand" : "default"}
+              />
+            ) : (
+              <StatTile
+                icon={Router}
+                label="Jaringan"
+                value={isOnline ? "Aktif" : "Terputus"}
+                accent={isOnline ? "success" : "destructive"}
+              />
+            )}
+          </CardContent>
+
+          <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              Diperbarui otomatis tiap 5 menit
+            </p>
             <Button
               variant="outline"
               size="sm"
@@ -124,69 +198,29 @@ export default function View({
             >
               <RefreshCw
                 size={14}
-                className={`mr-2 ${loading ? "animate-spin" : ""}`}
-              />{" "}
-              Refresh
+                className={cn("mr-2", loading && "animate-spin")}
+              />
+              Segarkan
             </Button>
-          </CardHeader>
-          <CardContent
-            className={`grid gap-4 text-center ${
-              isSpeedOnDemandEnabled
-                ? "grid-cols-2 md:grid-cols-4"
-                : "grid-cols-2 md:grid-cols-3"
-            }`}
-          >
-            <div className="p-4 border rounded-lg">
-              <h4 className="text-sm font-semibold text-muted-foreground">
-                Status
-              </h4>
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <div
-                  className={`w-3 h-3 rounded-full ${isOnline ? "bg-green-500 animate-glow-green" : "bg-red-500 animate-glow-red"}`}
-                ></div>
-                <p className="text-lg font-bold">
-                  {isOnline ? "Online" : "Offline"}
-                </p>
-              </div>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="text-sm font-semibold text-muted-foreground">
-                Uptime
-              </h4>
-              <p className="text-lg font-bold mt-1">
-                {ssidInfo.uptime || "N/A"}
-              </p>
-            </div>
-            <div className="p-4 border rounded-lg">
-              <h4 className="text-sm font-semibold text-muted-foreground">
-                Connected Devices
-              </h4>
-              <p className="text-lg font-bold mt-1">{allDevices.length}</p>
-            </div>
-            {/* Active Boost - Only show if Speed On Demand is enabled */}
-            {isSpeedOnDemandEnabled && (
-              <div className="p-4 border rounded-lg">
-                <h4 className="text-sm font-semibold text-muted-foreground">
-                  Active Boost
-                </h4>
-                <p className="text-lg font-bold mt-1">
-                  {dashboardStatus.activeBoost?.profile || "None"}
-                </p>
-              </div>
-            )}
-          </CardContent>
+          </div>
         </Card>
+
         <CustomerView customerInfo={customerInfo} />
       </div>
 
-      {/* Second Row: Status Overview and Devices Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Devices + service status */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Associated Devices</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <span className="icon-chip">
+                  <MonitorSmartphone className="h-5 w-5" />
+                </span>
+                Perangkat Terhubung
+              </CardTitle>
               <CardDescription>
-                A list of devices currently connected to your network.
+                Daftar perangkat yang sedang terhubung ke jaringan Anda.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -199,11 +233,16 @@ export default function View({
         </div>
       </div>
 
-      {/* News and Promotions Section */}
+      {/* Traffic usage */}
       {trafficUsageEnabled && trafficUsage && (
         <Card>
           <CardHeader>
-            <CardTitle>Pemakaian Traffic</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <span className="icon-chip">
+                <Activity className="h-5 w-5" />
+              </span>
+              Pemakaian Traffic
+            </CardTitle>
             <CardDescription>
               Ringkasan bandwidth saat ini, pemakaian hari ini, dan bulan
               berjalan.
@@ -217,30 +256,45 @@ export default function View({
                   compact
                   intervalMs={15000}
                 />
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground">Hari Ini</p>
-                    <p className="mt-2 text-xl font-semibold">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="tile">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Hari Ini
+                    </p>
+                    <p className="mt-2 text-2xl font-bold">
                       {formatBytes(trafficUsage.today.totalBytes)}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Down {formatBytes(trafficUsage.today.downloadBytes)} • Up{" "}
-                      {formatBytes(trafficUsage.today.uploadBytes)}
-                    </p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
+                        {formatBytes(trafficUsage.today.downloadBytes)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <ArrowUpFromLine className="h-3.5 w-3.5 text-success" />
+                        {formatBytes(trafficUsage.today.uploadBytes)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground">Bulan Ini</p>
-                    <p className="mt-2 text-xl font-semibold">
+                  <div className="tile">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Bulan Ini
+                    </p>
+                    <p className="mt-2 text-2xl font-bold">
                       {formatBytes(trafficUsage.currentMonth.totalBytes)}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Down{" "}
-                      {formatBytes(trafficUsage.currentMonth.downloadBytes)} •
-                      Up {formatBytes(trafficUsage.currentMonth.uploadBytes)}
-                    </p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
+                        {formatBytes(trafficUsage.currentMonth.downloadBytes)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <ArrowUpFromLine className="h-3.5 w-3.5 text-success" />
+                        {formatBytes(trafficUsage.currentMonth.uploadBytes)}
+                      </span>
+                    </div>
                   </div>
                   {trafficUsage.lastCollectedAt && (
-                    <p className="text-xs text-muted-foreground md:col-span-2">
+                    <p className="text-xs text-muted-foreground sm:col-span-2">
                       {trafficUsage.stale ? "Data terakhir" : "Update terakhir"}
                       :{" "}
                       {new Date(trafficUsage.lastCollectedAt).toLocaleString()}
@@ -249,7 +303,7 @@ export default function View({
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
                 Akun ini belum memiliki layanan PPPoE yang bisa dimonitor.
               </div>
             )}
@@ -257,9 +311,15 @@ export default function View({
         </Card>
       )}
 
+      {/* News & promos */}
       <Card>
         <CardHeader>
-          <CardTitle>Berita & Promo</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <Newspaper className="h-5 w-5" />
+            </span>
+            Berita &amp; Promo
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <NewsDisplay />

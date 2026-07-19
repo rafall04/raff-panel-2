@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function WifiView({
   ssidInfo: initialSsidInfo,
@@ -45,49 +46,61 @@ export default function WifiView({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center">
-          <CardTitle className="mb-4 sm:mb-0 flex items-center">
-            <Wifi className="mr-2" />
-            SSID Management
-          </CardTitle>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="sync-ssid"
-                checked={syncedSsids.length > 0}
-                onCheckedChange={handleSyncChange}
-              />
-              <Label htmlFor="sync-ssid">Sync SSIDs</Label>
+    <div className="space-y-5">
+      <PageHeader
+        icon={Wifi}
+        title="Kelola WiFi"
+        description="Ubah nama dan kata sandi WiFi Anda."
+      />
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <span className="icon-chip">
+                <Wifi className="h-5 w-5" />
+              </span>
+              Pengaturan SSID
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="sync-ssid"
+                  checked={syncedSsids.length > 0}
+                  onCheckedChange={handleSyncChange}
+                />
+                <Label htmlFor="sync-ssid" className="text-sm">
+                  Samakan Semua
+                </Label>
+              </div>
+              <Select
+                value={selectedSSID}
+                onValueChange={setSelectedSSID}
+                disabled={syncedSsids.length > 0}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Pilih SSID" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ssidInfo.ssid.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={selectedSSID}
-              onValueChange={setSelectedSSID}
-              disabled={syncedSsids.length > 0}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select SSID" />
-              </SelectTrigger>
-              <SelectContent>
-                {ssidInfo.ssid.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Form
-          ssid={ssidInfo.ssid}
-          selectedSsid={selectedSSID}
-          syncedSsids={syncedSsids}
-          refreshSsidInfo={refreshSsidInfo}
-        />
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <Form
+            ssid={ssidInfo.ssid}
+            selectedSsid={selectedSSID}
+            syncedSsids={syncedSsids}
+            refreshSsidInfo={refreshSsidInfo}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   updateCredentials,
 } from "../actions";
 import type { CustomerInfo } from "../actions";
+import type { LucideIcon } from "lucide-react";
 import {
   Settings,
   LogOut,
@@ -19,8 +20,12 @@ import {
   ArrowRight,
   KeyRound,
   Wrench,
+  User,
+  AtSign,
+  Phone,
+  MapPin,
+  Info,
 } from "lucide-react";
-import PackageChangeHistory from "../package-change-history";
 import PhoneNumbersManagement from "../phone-numbers";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -46,7 +51,6 @@ import {
 import { useReportDialog } from "../report-dialog-context";
 import { toast } from "sonner";
 
-// Helper to format currency
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
@@ -56,16 +60,48 @@ const currencyFormatter = new Intl.NumberFormat("id-ID", {
 interface MonthlyPackage {
   id: number | string;
   name: string;
-  price: number; // Number format, perlu diformat untuk display
-  profile: string; // Kecepatan internet (displayProfile atau profile)
-  description: string; // Optional, bisa empty string
+  price: number;
+  profile: string;
+  description: string;
+}
+
+/** Reject the promise on a non-2xx backend status so toast.promise shows an error. */
+function ensureOk(result: { status?: number; message?: string }) {
+  if (result.status && (result.status < 200 || result.status >= 300)) {
+    throw new Error(result.message || "Terjadi kesalahan.");
+  }
+  return result;
+}
+
+function ProfileRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <div className="break-words text-sm font-medium">{value || "—"}</div>
+      </div>
+    </div>
+  );
 }
 
 export default function SettingsView({
   allPackages,
   currentCustomerInfo,
 }: {
-  allPackages: MonthlyPackage[]; // Changed from Package[] to MonthlyPackage[]
+  allPackages: MonthlyPackage[];
   currentCustomerInfo: CustomerInfo;
 }) {
   const { openDialog: openReportDialog } = useReportDialog();
@@ -75,61 +111,91 @@ export default function SettingsView({
   );
   const [isChangeLoading, setIsChangeLoading] = useState(false);
 
-  // State for credentials update
+  // Username change (separate from password — you never need to touch one to change the other)
+  const [usernameCurrentPw, setUsernameCurrentPw] = useState("");
   const [newUsername, setNewUsername] = useState("");
+  const [usernameLoading, setUsernameLoading] = useState(false);
+
+  // Password change
+  const [passwordCurrentPw, setPasswordCurrentPw] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [isCredentialUpdateLoading, setIsCredentialUpdateLoading] =
-    useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const [isRebootDialogOpen, setRebootDialogOpen] = useState(false);
   const [isPackageListOpen, setPackageListOpen] = useState(false);
   const [isPackageConfirmOpen, setPackageConfirmOpen] = useState(false);
 
-  // Filter out current package and format packages
-  const availablePackages = allPackages.filter((p) => {
-    const currentPackageName =
-      currentCustomerInfo.package || currentCustomerInfo.packageName;
-    return p.name !== currentPackageName;
-  });
+  const currentPackageName =
+    currentCustomerInfo.package || currentCustomerInfo.packageName || "N/A";
+  const monthlyBill =
+    currentCustomerInfo.monthlyBillFormatted ||
+    currencyFormatter.format(currentCustomerInfo.monthlyBill);
 
-  const handleUpdateCredentials = async (e: React.FormEvent) => {
+  const availablePackages = allPackages.filter(
+    (p) =>
+      p.name !==
+      (currentCustomerInfo.package || currentCustomerInfo.packageName),
+  );
+
+  const handleUpdateUsername = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (newPassword !== confirmNewPassword) {
-      toast.error("Kata sandi baru tidak cocok!");
+    if (!usernameCurrentPw) {
+      toast.error("Kata sandi saat ini diperlukan untuk verifikasi.");
       return;
     }
-    if (!currentPassword) {
-      toast.error("Kata sandi saat ini diperlukan untuk membuat perubahan.");
+    if (!newUsername.trim()) {
+      toast.error("Masukkan nama pengguna baru.");
       return;
     }
-    if (!newUsername && !newPassword) {
-      toast.info(
-        "Anda harus menyediakan nama pengguna baru atau kata sandi baru.",
-      );
-      return;
-    }
-
-    setIsCredentialUpdateLoading(true);
+    setUsernameLoading(true);
     const promise = updateCredentials(
-      currentPassword,
-      newUsername || undefined,
-      newPassword || undefined,
-    );
-
+      usernameCurrentPw,
+      newUsername.trim(),
+      undefined,
+    ).then(ensureOk);
     toast.promise(promise, {
-      loading: "Memperbarui kredensial...",
+      loading: "Memperbarui nama pengguna...",
       success: (result) => {
+        setUsernameCurrentPw("");
         setNewUsername("");
+        return result.message || "Nama pengguna berhasil diperbarui!";
+      },
+      error: (err) => err.message || "Gagal memperbarui nama pengguna.",
+      finally: () => setUsernameLoading(false),
+    });
+  };
+
+  const handleUpdatePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordCurrentPw) {
+      toast.error("Kata sandi saat ini diperlukan untuk verifikasi.");
+      return;
+    }
+    if (!newPassword) {
+      toast.error("Masukkan kata sandi baru.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Konfirmasi kata sandi baru tidak cocok!");
+      return;
+    }
+    setPasswordLoading(true);
+    const promise = updateCredentials(
+      passwordCurrentPw,
+      undefined,
+      newPassword,
+    ).then(ensureOk);
+    toast.promise(promise, {
+      loading: "Memperbarui kata sandi...",
+      success: (result) => {
+        setPasswordCurrentPw("");
         setNewPassword("");
         setConfirmNewPassword("");
-        setCurrentPassword("");
-        return result.message || "Kredensial berhasil diperbarui!";
+        return result.message || "Kata sandi berhasil diperbarui!";
       },
-      error: (err) => err.message || "Gagal memperbarui kredensial.",
-      finally: () => setIsCredentialUpdateLoading(false),
+      error: (err) => err.message || "Gagal memperbarui kata sandi.",
+      finally: () => setPasswordLoading(false),
     });
   };
 
@@ -164,15 +230,13 @@ export default function SettingsView({
     if (!selectedPackage) {
       return;
     }
-
     setIsChangeLoading(true);
     try {
       const result = await requestPackageChange(selectedPackage.name);
-      setPackageConfirmOpen(false); // Close confirmation dialog regardless of outcome
-
+      setPackageConfirmOpen(false);
       if (result.success) {
         toast.success(result.message || "Permintaan perubahan paket berhasil!");
-        setPackageListOpen(false); // Close package list only on success
+        setPackageListOpen(false);
       } else {
         toast.error(
           result.message || "Terjadi kesalahan yang tidak diketahui.",
@@ -191,19 +255,52 @@ export default function SettingsView({
     }
   };
 
-  const currentPackageName =
-    currentCustomerInfo.package || currentCustomerInfo.packageName || "N/A";
-  const monthlyBill =
-    currentCustomerInfo.monthlyBillFormatted ||
-    currencyFormatter.format(currentCustomerInfo.monthlyBill);
-
   return (
     <div className="space-y-5">
       <PageHeader
         icon={Settings}
-        title="Pengaturan & Tindakan"
-        description="Kelola langganan, akun, dan perangkat Anda."
+        title="Pengaturan"
+        description="Kelola profil, akun, langganan, dan perangkat Anda."
       />
+
+      {/* Profile (read-only) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <User className="h-5 w-5" />
+            </span>
+            Profil
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ProfileRow
+            icon={User}
+            label="Nama"
+            value={currentCustomerInfo.name}
+          />
+          <ProfileRow
+            icon={AtSign}
+            label="Nama Pengguna"
+            value={currentCustomerInfo.username}
+          />
+          <ProfileRow
+            icon={Phone}
+            label="Nomor HP Utama"
+            value={currentCustomerInfo.phone_number}
+          />
+          <ProfileRow
+            icon={MapPin}
+            label="Alamat"
+            value={currentCustomerInfo.address}
+          />
+          <div className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+            Untuk mengubah nama atau alamat, hubungi admin lewat WhatsApp atau
+            kirim laporan.
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Subscription */}
       <Card>
@@ -212,7 +309,7 @@ export default function SettingsView({
             <span className="icon-chip">
               <PackageCheck className="h-5 w-5" />
             </span>
-            Langganan Anda
+            Langganan
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -289,38 +386,35 @@ export default function SettingsView({
         </CardContent>
       </Card>
 
-      {/* Account credentials */}
+      {/* Account: username + password as SEPARATE forms */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <span className="icon-chip">
               <KeyRound className="h-5 w-5" />
             </span>
-            Kredensial Akun
+            Akun
           </CardTitle>
           <CardDescription>
-            Perbarui nama pengguna atau kata sandi Anda. Memerlukan kata sandi
-            saat ini untuk verifikasi.
+            Ubah nama pengguna dan kata sandi secara terpisah. Setiap perubahan
+            butuh kata sandi Anda saat ini.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={(e) => {
-              void handleUpdateCredentials(e);
-            }}
-            className="space-y-4"
-          >
+        <CardContent className="space-y-6">
+          {/* Change username */}
+          <form onSubmit={handleUpdateUsername} className="space-y-3">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <AtSign className="h-4 w-4 text-brand" /> Ubah Nama Pengguna
+            </p>
             <div className="space-y-2">
-              <Label htmlFor="current-password">
-                Kata Sandi Saat Ini (Wajib)
-              </Label>
+              <Label htmlFor="username-current-pw">Kata Sandi Saat Ini</Label>
               <Input
-                id="current-password"
+                id="username-current-pw"
                 type="password"
+                autoComplete="current-password"
                 placeholder="Masukkan kata sandi Anda saat ini"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
+                value={usernameCurrentPw}
+                onChange={(e) => setUsernameCurrentPw(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -328,30 +422,64 @@ export default function SettingsView({
               <Input
                 id="new-username"
                 type="text"
-                placeholder="Biarkan kosong untuk tidak mengubah"
+                autoComplete="username"
+                placeholder="Nama pengguna baru"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={usernameLoading}
+              className="w-full sm:w-auto"
+            >
+              {usernameLoading ? (
+                <LoaderCircle className="mr-2 animate-spin" />
+              ) : (
+                <Check className="mr-2" />
+              )}
+              Simpan Nama Pengguna
+            </Button>
+          </form>
+
+          <div className="border-t" />
+
+          {/* Change password */}
+          <form onSubmit={handleUpdatePassword} className="space-y-3">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <KeyRound className="h-4 w-4 text-brand" /> Ubah Kata Sandi
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="password-current-pw">Kata Sandi Saat Ini</Label>
+              <Input
+                id="password-current-pw"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Masukkan kata sandi Anda saat ini"
+                value={passwordCurrentPw}
+                onChange={(e) => setPasswordCurrentPw(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="new-password">Kata Sandi Baru</Label>
                 <Input
                   id="new-password"
                   type="password"
-                  placeholder="Biarkan kosong untuk tidak mengubah"
+                  autoComplete="new-password"
+                  placeholder="Kata sandi baru"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">
-                  Konfirmasi Kata Sandi Baru
-                </Label>
+                <Label htmlFor="confirm-password">Konfirmasi Kata Sandi</Label>
                 <Input
                   id="confirm-password"
                   type="password"
-                  placeholder="Konfirmasi kata sandi baru"
+                  autoComplete="new-password"
+                  placeholder="Ulangi kata sandi baru"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                 />
@@ -359,19 +487,22 @@ export default function SettingsView({
             </div>
             <Button
               type="submit"
-              disabled={isCredentialUpdateLoading}
+              disabled={passwordLoading}
               className="w-full sm:w-auto"
             >
-              {isCredentialUpdateLoading ? (
+              {passwordLoading ? (
                 <LoaderCircle className="mr-2 animate-spin" />
               ) : (
                 <Check className="mr-2" />
               )}
-              Perbarui Kredensial
+              Simpan Kata Sandi
             </Button>
           </form>
         </CardContent>
       </Card>
+
+      {/* Phone numbers */}
+      <PhoneNumbersManagement />
 
       {/* Device & account actions */}
       <Card>
@@ -387,11 +518,6 @@ export default function SettingsView({
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {/* The report dialog lives in dashboard/layout.tsx as a SIBLING of
-              {children}, so this page has no Dialog ancestor — a DialogTrigger
-              here threw "must be used within Dialog" and killed the whole
-              Settings page. Open it through the context instead, the same way
-              status.view.tsx does. */}
           <Button
             variant="outline"
             onClick={openReportDialog}
@@ -449,12 +575,6 @@ export default function SettingsView({
           </Button>
         </CardContent>
       </Card>
-
-      {/* Package Change Request History */}
-      <PackageChangeHistory />
-
-      {/* Phone Numbers Management */}
-      <PhoneNumbersManagement />
 
       {/* Package change confirmation */}
       <Dialog open={isPackageConfirmOpen} onOpenChange={setPackageConfirmOpen}>

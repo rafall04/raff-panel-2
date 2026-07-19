@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import type { SSIDInfo } from "./actions";
 import SignalStrengthIcon from "./SignalStrengthIcon";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MonitorSmartphone } from "lucide-react";
 
 type AssociatedDevicesTableProps = {
   devices: SSIDInfo["ssid"][0]["associatedDevices"];
@@ -20,9 +22,11 @@ export default function AssociatedDevicesTable({
 }: AssociatedDevicesTableProps) {
   if (devices.length === 0) {
     return (
-      <p className="text-muted-foreground text-center py-8">
-        No associated devices found.
-      </p>
+      <EmptyState
+        icon={MonitorSmartphone}
+        title="Belum ada perangkat terhubung"
+        description="Perangkat yang terhubung ke WiFi Anda akan muncul di sini."
+      />
     );
   }
 
@@ -30,16 +34,16 @@ export default function AssociatedDevicesTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Device Name</TableHead>
-          <TableHead>IP Address</TableHead>
-          <TableHead className="text-right">Signal</TableHead>
+          <TableHead>Perangkat</TableHead>
+          <TableHead>Alamat IP</TableHead>
+          <TableHead className="text-right">Sinyal</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {devices.map((device, index) => (
           <TableRow key={device.mac || index}>
             <TableCell className="font-medium">
-              {device.hostName || "Unknown Device"}
+              {device.hostName || "Perangkat Tidak Dikenal"}
             </TableCell>
             <TableCell>{device.ip || "N/A"}</TableCell>
             <TableCell className="text-right">

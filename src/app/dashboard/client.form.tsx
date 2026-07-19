@@ -93,7 +93,7 @@ export default function Form({
     >
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="ssid">SSID Name</Label>
+          <Label htmlFor="ssid">Nama WiFi (SSID)</Label>
           <div className="relative">
             <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -107,13 +107,13 @@ export default function Form({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">New Password (optional)</Label>
+          <Label htmlFor="password">Kata Sandi Baru (opsional)</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Leave blank to keep current"
+              placeholder="Kosongkan jika tidak diubah"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               className="pl-10 pr-10"

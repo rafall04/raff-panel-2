@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import AssociatedDevicesTable from "./associated-devices-table";
 import AnnouncementDisplay from "./announcement-display";
 import NewsDisplay from "./news-display";
+import QuickActions from "./quick-actions";
 import { useSpeedOnDemand } from "./speed-on-demand-context";
 import CustomerTrafficLiveCard from "@/components/customer-traffic-live-card";
 
@@ -207,6 +208,8 @@ export default function View({
 
         <CustomerView customerInfo={customerInfo} />
       </div>
+
+      <QuickActions />
 
       {/* Devices + service status */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">

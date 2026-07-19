@@ -1,55 +1,126 @@
-import React from "react";
+"use client";
+
+import type { LucideIcon } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import {
+  HelpCircle,
+  BookOpen,
+  LifeBuoy,
+  MessageSquareWarning,
+  Info,
+  Wifi,
+  Gauge,
+  Rocket,
+} from "lucide-react";
+import { useReportDialog } from "../report-dialog-context";
 
-const faqData = [
+const faqData: {
+  id: string;
+  icon: LucideIcon;
+  question: string;
+  answer: string;
+}[] = [
   {
     id: "item-1",
-    question: "Apa itu RAF Client?",
+    icon: Info,
+    question: "Apa itu portal pelanggan ini?",
     answer:
-      "RAF Client adalah aplikasi panel pelanggan untuk mengelola layanan internet Anda, memantau penggunaan, dan mendapatkan dukungan.",
+      "Portal pelanggan adalah aplikasi untuk mengelola layanan internet Anda: memantau status koneksi & perangkat, melihat tagihan, mengubah WiFi, dan mengirim laporan gangguan.",
   },
   {
     id: "item-2",
-    question: "Bagaimana cara mengubah kata sandi Wi-Fi saya?",
+    icon: Wifi,
+    question: "Bagaimana cara mengubah nama & kata sandi Wi-Fi saya?",
     answer:
-      "Anda dapat mengubah kata sandi Wi-Fi Anda melalui menu Pengaturan > Wi-Fi. Ikuti petunjuk untuk memasukkan kata sandi baru Anda.",
+      "Buka menu Wi-Fi di bawah, pilih SSID, lalu isi nama baru dan/atau kata sandi baru dan tekan Simpan. Perubahan diterapkan langsung ke perangkat Anda.",
   },
   {
     id: "item-3",
+    icon: Gauge,
     question: "Mengapa kecepatan internet saya lambat?",
     answer:
-      "Kecepatan lambat bisa disebabkan oleh banyak faktor, termasuk jarak dari router, jumlah perangkat yang terhubung, atau masalah pada jaringan. Coba restart router Anda terlebih dahulu. Jika masalah berlanjut, hubungi dukungan melalui formulir laporan.",
+      "Kecepatan lambat bisa disebabkan oleh jarak dari router, banyaknya perangkat terhubung, atau gangguan jaringan. Coba reboot router dari menu Pengaturan. Jika masih bermasalah, kirim Laporan Masalah.",
   },
   {
     id: "item-4",
+    icon: Rocket,
     question: "Bagaimana cara menggunakan Speed Boost?",
     answer:
-      'Fitur Speed Boost tersedia di halaman utama. Cukup tekan tombol "Boost" untuk mendapatkan peningkatan kecepatan sementara sesuai dengan paket layanan Anda.',
+      'Jika tersedia untuk paket Anda, menu "Boost" akan muncul di navigasi. Pilih boost, lakukan pembayaran bila diperlukan, dan kecepatan akan ditingkatkan sementara.',
   },
 ];
 
 export default function KnowledgeBasePage() {
+  const { openDialog } = useReportDialog();
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">Pusat Bantuan</h1>
-      <Accordion
-        type="single"
-        collapsible
-        defaultValue="item-1"
-        className="w-full"
-      >
-        {faqData.map((faq) => (
-          <AccordionItem key={faq.id} value={faq.id}>
-            <AccordionTrigger>{faq.question}</AccordionTrigger>
-            <AccordionContent>{faq.answer}</AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+    <div className="space-y-5">
+      <PageHeader
+        icon={HelpCircle}
+        title="Pusat Bantuan"
+        description="Temukan jawaban cepat, atau hubungi kami langsung."
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <span className="icon-chip">
+              <BookOpen className="h-5 w-5" />
+            </span>
+            Pertanyaan Umum
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Accordion
+            type="single"
+            collapsible
+            defaultValue="item-1"
+            className="w-full"
+          >
+            {faqData.map((faq) => (
+              <AccordionItem key={faq.id} value={faq.id}>
+                <AccordionTrigger className="text-left hover:no-underline">
+                  <span className="flex items-center gap-2.5">
+                    <faq.icon className="h-4 w-4 shrink-0 text-brand" />
+                    {faq.question}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="pl-6 text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-br from-brand/10 to-transparent p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-brand-foreground shadow-brand-glow">
+              <LifeBuoy className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold">Masih butuh bantuan?</p>
+              <p className="text-sm text-muted-foreground">
+                Kirim laporan gangguan dan tim kami akan menindaklanjuti
+                secepatnya.
+              </p>
+            </div>
+          </div>
+          <Button onClick={openDialog} className="mt-4 w-full">
+            <MessageSquareWarning className="mr-2 h-4 w-4" /> Laporkan Masalah
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

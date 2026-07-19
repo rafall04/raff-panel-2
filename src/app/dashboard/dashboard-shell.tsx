@@ -29,7 +29,7 @@ function DashboardContent({
   return (
     <>
       <div className="flex min-h-screen flex-col">
-        <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background">
           <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-brand-foreground shadow-brand-glow">

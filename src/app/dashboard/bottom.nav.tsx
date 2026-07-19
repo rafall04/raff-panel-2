@@ -36,7 +36,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full border-t border-border/60 bg-background/85 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed bottom-0 left-0 z-50 w-full border-t border-border/60 bg-background pb-[env(safe-area-inset-bottom)]">
       <div
         className="mx-auto grid h-16 w-full max-w-lg font-medium"
         style={{

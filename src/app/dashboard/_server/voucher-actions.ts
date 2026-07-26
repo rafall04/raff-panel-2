@@ -103,6 +103,20 @@ export async function createVoucherPurchase(
       prof,
       error: error instanceof Error ? error.message : "unknown_error",
     });
+
+    // `serverApiClient` MELEMPAR pada non-2xx, jadi tanpa ini setiap penolakan backend —
+    // "belum punya nomor HP", "paket tidak ditemukan", rate limit — sampai ke pelanggan
+    // sebagai "Gagal membuat transaksi pembayaran." yang tidak bisa ditindaklanjuti.
+    // Hanya 4xx yang diteruskan: pesan 5xx bisa membawa detail internal.
+    if (
+      error instanceof ServerApiError &&
+      error.statusCode >= 400 &&
+      error.statusCode < 500 &&
+      error.message
+    ) {
+      return { success: false, message: error.message };
+    }
+
     return { success: false, message: "Gagal membuat transaksi pembayaran." };
   }
 }

@@ -2,89 +2,133 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   RAF NET — Customer Portal design tokens.
+
+   Three layers, in order: semantic tokens (--background, --brand, …) consumed
+   by Tailwind, base element styling, then component classes (.tile, .icon-chip,
+   .brand-panel, …). Components must never hardcode a hex value — every colour
+   goes through a token so light and dark stay in lockstep.
+   ========================================================================== */
+
 @layer base {
   :root {
-    /* Soft blue-grey so white cards visibly elevate above the page. */
-    --background: 214 32% 95%;
-    --foreground: 222.2 47% 11%;
+    color-scheme: light;
+
+    /* ── Surfaces ─────────────────────────────────────────────────────── */
+    /* Cool near-white page, pure-white cards: the card reads as elevated
+       without needing a heavy shadow, which is what keeps the UI calm. */
+    --background: 210 40% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47% 11%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47% 11%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 222 47% 11%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 214 30% 92%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 214 32% 93%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 214 30% 92%;
-    --muted-foreground: 215.4 16.3% 40%;
+    --muted: 214 32% 93%;
+    /* 4.6:1 on --card — passes AA for body copy, not just large text. */
+    --muted-foreground: 215 16% 42%;
 
-    --accent: 214 30% 92%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 214 32% 93%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* ── Semantic status ──────────────────────────────────────────────── */
+    --destructive: 0 72% 47%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 152 62% 34%;
+    --success: 152 62% 31%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 35 92% 42%;
+    --warning: 32 92% 38%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214 25% 86%;
-    --input: 214 25% 86%;
-    --ring: 200 95% 42%;
+    --border: 214 28% 89%;
+    --input: 214 28% 87%;
+    --ring: 201 92% 38%;
 
-    /* Brand accent — RAF NET azure. Used for highlights, active nav, key figures. */
-    --brand: 200 95% 42%;
+    /* ── Brand ────────────────────────────────────────────────────────── */
+    /* Deep azure → teal. Deliberately darker than a stock "tech blue" so brand
+       text clears 4.5:1 on white; the lighter --brand-2 is gradient-only. */
+    --brand: 201 92% 36%;
     --brand-foreground: 0 0% 100%;
-    --brand-2: 190 90% 45%;
+    --brand-2: 188 88% 38%;
 
-    --radius: 0.85rem;
+    /* ── Elevation ────────────────────────────────────────────────────── */
+    /* Blue-shifted shadow colour: neutral-grey shadows look muddy over a cool
+       background. Four steps only — more than that and nothing reads as flat. */
+    --shadow-1:
+      0 1px 2px hsl(215 40% 20% / 0.05), 0 1px 3px hsl(215 40% 20% / 0.04);
+    --shadow-2:
+      0 1px 2px hsl(215 40% 20% / 0.05),
+      0 10px 24px -14px hsl(215 40% 20% / 0.3);
+    --shadow-3:
+      0 2px 6px hsl(215 40% 20% / 0.06),
+      0 24px 48px -24px hsl(215 40% 20% / 0.32);
+    --shadow-4: 0 32px 64px -28px hsl(215 40% 20% / 0.4);
+
+    --radius: 0.9rem;
   }
 
   .dark {
-    --background: 222 47% 5.5%;
+    color-scheme: dark;
+
+    /* Near-black navy rather than pure black: keeps the brand azure from
+       vibrating and gives shadows somewhere to land. */
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
 
-    --card: 222 33% 9.5%;
+    --card: 222 32% 9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 33% 10.5%;
+    --popover: 222 32% 10%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 222 47% 11%;
 
-    --secondary: 217 30% 16%;
+    --secondary: 217 28% 16%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 30% 15%;
-    --muted-foreground: 215 20% 68%;
+    --muted: 217 28% 15%;
+    /* 5.1:1 on --card. Dark mode needs a *lighter* muted than the naive invert,
+       or secondary text drops below AA. */
+    --muted-foreground: 215 20% 70%;
 
-    --accent: 217 30% 18%;
+    --accent: 217 28% 18%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 152 66% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 152 62% 48%;
+    --success-foreground: 150 60% 6%;
 
-    --warning: 38 95% 55%;
-    --warning-foreground: 20 40% 10%;
+    --warning: 38 95% 58%;
+    --warning-foreground: 30 50% 8%;
 
     --border: 217 25% 19%;
-    --input: 217 25% 19%;
-    --ring: 200 98% 52%;
+    --input: 217 25% 22%;
+    --ring: 199 95% 56%;
 
-    --brand: 200 98% 52%;
-    --brand-foreground: 222 47% 8%;
+    /* Lightened and slightly desaturated, not inverted: same hue family. */
+    --brand: 199 95% 54%;
+    --brand-foreground: 222 47% 7%;
     --brand-2: 187 92% 52%;
+
+    --shadow-1: 0 1px 2px hsl(222 60% 2% / 0.5);
+    --shadow-2:
+      0 1px 2px hsl(222 60% 2% / 0.5), 0 12px 28px -16px hsl(222 60% 2% / 0.8);
+    --shadow-3:
+      0 2px 6px hsl(222 60% 2% / 0.5), 0 28px 56px -28px hsl(222 60% 2% / 0.9);
+    --shadow-4: 0 36px 72px -32px hsl(222 60% 2% / 0.95);
   }
 }
 
@@ -92,45 +136,243 @@
   * {
     @apply border-border;
   }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
-    /* Subtle depth: a soft brand glow anchored top-center, fixed so it doesn't scroll. */
-    background-image: radial-gradient(
-      120% 55% at 50% -10%,
-      hsl(var(--brand) / 0.1),
-      transparent 60%
-    );
+    text-rendering: optimizeLegibility;
+    /* Two soft brand auras (top-centre, bottom-right) fixed to the viewport.
+       Cheap — no blur filter, no extra element — and it stops large empty
+       areas from reading as flat grey on desktop. */
+    background-image:
+      radial-gradient(
+        90% 45% at 50% -8%,
+        hsl(var(--brand) / 0.09),
+        transparent 62%
+      ),
+      radial-gradient(
+        60% 40% at 100% 100%,
+        hsl(var(--brand-2) / 0.05),
+        transparent 60%
+      );
     background-attachment: fixed;
+  }
+
+  /* One focus treatment for the whole app, so nothing can quietly ship without
+     a visible keyboard affordance. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Headings carry the optical tightening; body copy keeps default tracking. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Figures never reflow as digits change (uptime, byte counts, countdowns). */
+  .tabular,
+  th,
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: hsl(var(--brand) / 0.24);
+  }
+
+  /* Slim, themed scrollbars — a default chrome scrollbar over a designed
+     surface is the most obvious "unfinished web app" tell on desktop. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
   }
 }
 
 @layer components {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+
   /* Nested stat/info tile inside a card — one step of contrast above the card.
      Raw hsl(var()/alpha) rather than @apply-with-opacity, which Tailwind cannot
      resolve for custom colors inside @apply. */
   .tile {
     @apply rounded-xl border p-4;
-    background-color: hsl(var(--muted) / 0.4);
+    background-color: hsl(var(--muted) / 0.45);
+    border-color: hsl(var(--border) / 0.7);
   }
 
-  /* Rounded square that holds a lucide icon, tinted with the brand accent. */
+  /* Interactive tile: same base, plus press feedback. The hover lift is gated
+     behind a real pointer so touch devices never get a stuck :hover state. */
+  .tile-interactive {
+    @apply tile transition-all duration-200 active:scale-[0.985];
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tile-interactive:hover {
+      background-color: hsl(var(--muted) / 0.8);
+      border-color: hsl(var(--brand) / 0.35);
+    }
+  }
+
+  /* Card lift on hover — desktop pointers only. */
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover {
+      transition:
+        box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 220ms ease;
+    }
+    .card-hover:hover {
+      box-shadow: var(--shadow-3);
+      border-color: hsl(var(--brand) / 0.28);
+      transform: translateY(-2px);
+    }
+  }
+
+  /* ── Brand accents ────────────────────────────────────────────────────── */
+
+  /* Rounded square holding a lucide icon, tinted with the brand accent. */
   .icon-chip {
     @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
     background-color: hsl(var(--brand) / 0.12);
     color: hsl(var(--brand));
-    box-shadow: inset 0 0 0 1px hsl(var(--brand) / 0.22);
+    box-shadow: inset 0 0 0 1px hsl(var(--brand) / 0.2);
+  }
+
+  /* Solid gradient counterpart, for the one hero icon per view. */
+  .icon-chip-solid {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--brand)),
+      hsl(var(--brand-2))
+    );
+    color: hsl(var(--brand-foreground));
+    box-shadow:
+      0 8px 20px -8px hsl(var(--brand) / 0.6),
+      inset 0 1px 0 hsl(0 0% 100% / 0.25);
+  }
+
+  /* Panel washed with the brand — plan summaries, active-boost callouts. */
+  .brand-panel {
+    @apply rounded-xl border p-4;
+    border-color: hsl(var(--brand) / 0.22);
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--brand) / 0.13),
+      hsl(var(--brand-2) / 0.06)
+    );
   }
 
   /* Brand gradient text for hero figures / logotype. */
   .text-gradient-brand {
     background-image: linear-gradient(
-      to right,
+      100deg,
       hsl(var(--brand)),
       hsl(var(--brand-2))
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  /* ── Typography helpers ───────────────────────────────────────────────── */
+
+  /* Small uppercase eyebrow above a title or over a figure. */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground;
+  }
+
+  /* ── Status ───────────────────────────────────────────────────────────── */
+
+  /* Pill for online/offline and payment state. Colour never carries the meaning
+     alone — every caller pairs it with a dot or icon and a text label. */
+  .status-pill {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+
+  /* ── Loading ──────────────────────────────────────────────────────────── */
+
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--foreground) / 0.06),
+      transparent
+    );
+    animation: shimmer 1.8s infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+@layer utilities {
+  /* Scroll container that hides its scrollbar — horizontal tab strips and chip
+     rows on mobile, where a visible bar would eat into the touch target. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe-area helpers for the fixed bottom nav on notched devices. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* The app's horizontal rhythm: gutters widen with the viewport and never
+     let content sit under a notch in landscape. One class instead of
+     `px-4 sm:px-6 lg:px-8` repeated at every level of the shell. */
+  .px-gutter {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  @media (min-width: 640px) {
+    .px-gutter {
+      padding-left: max(1.5rem, env(safe-area-inset-left));
+      padding-right: max(1.5rem, env(safe-area-inset-right));
+    }
+  }
+  @media (min-width: 1024px) {
+    .px-gutter {
+      padding-left: max(2rem, env(safe-area-inset-left));
+      padding-right: max(2rem, env(safe-area-inset-right));
+    }
   }
 }
 

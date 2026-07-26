@@ -12,9 +12,20 @@ const accentText: Record<Accent, string> = {
   destructive: "text-destructive",
 };
 
+const accentChip: Record<Accent, string> = {
+  default: "bg-muted text-muted-foreground",
+  brand: "bg-brand/12 text-brand",
+  success: "bg-success/12 text-success",
+  warning: "bg-warning/12 text-warning",
+  destructive: "bg-destructive/12 text-destructive",
+};
+
 /**
- * Compact metric tile: small labelled figure with an optional icon and hint.
- * Designed to sit in a responsive grid inside a Card.
+ * Compact metric tile: a small icon chip, an uppercase label, the figure, and
+ * an optional hint. Designed to sit in a responsive grid inside a Card.
+ *
+ * The figure is tabular so a ticking value (uptime, device count) never nudges
+ * the tiles beside it.
  */
 export function StatTile({
   icon: Icon,
@@ -32,18 +43,32 @@ export function StatTile({
   className?: string;
 }) {
   return (
-    <div className={cn("tile flex flex-col gap-1.5", className)}>
-      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
-        <span className="truncate">{label}</span>
+    <div className={cn("tile flex flex-col gap-2 p-3.5 sm:p-4", className)}>
+      <div className="flex items-center gap-2">
+        {Icon ? (
+          <span
+            className={cn(
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+              accentChip[accent],
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+        ) : null}
+        <span className="eyebrow truncate">{label}</span>
       </div>
       <div
-        className={cn("text-xl font-bold leading-tight", accentText[accent])}
+        className={cn(
+          "tabular text-lg font-bold leading-tight sm:text-xl",
+          accentText[accent],
+        )}
       >
         {value}
       </div>
       {hint ? (
-        <div className="text-xs text-muted-foreground">{hint}</div>
+        <div className="-mt-1 truncate text-xs text-muted-foreground">
+          {hint}
+        </div>
       ) : null}
     </div>
   );

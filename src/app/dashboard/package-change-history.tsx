@@ -11,66 +11,74 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { Timeline, TimelineItem } from "@/components/ui/timeline";
+import { currencyFormatter, formatDateTime } from "@/lib/format";
 import type { PackageChangeRequest } from "@/services/package-change.service";
-import { Package, Calendar, User, FileText } from "lucide-react";
+import { ArrowRight, Package, User, FileText } from "lucide-react";
 
-// Helper function untuk format currency
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
+const formatCurrency = (amount: number): string =>
+  currencyFormatter.format(amount);
+
+const formatDate = (dateString: string | null): string =>
+  dateString ? formatDateTime(dateString) : "N/A";
+
+type BadgeVariant = React.ComponentProps<typeof Badge>["variant"];
+type Tone = React.ComponentProps<typeof TimelineItem>["tone"];
+
+/**
+ * Status → presentation. Previously this was raw palette classes
+ * (`bg-yellow-500/20 text-yellow-600`), which ignored the theme entirely and
+ * looked wrong in dark mode; the badge variants are token-driven.
+ */
+const STATUS: Record<
+  string,
+  { label: string; variant: BadgeVariant; tone: Tone }
+> = {
+  pending: { label: "Menunggu", variant: "warning", tone: "warning" },
+  approved: { label: "Disetujui", variant: "success", tone: "success" },
+  rejected: { label: "Ditolak", variant: "danger", tone: "destructive" },
+  cancelled: { label: "Dibatalkan", variant: "secondary", tone: "muted" },
 };
 
-// Helper function untuk format date
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) {
-    return "N/A";
-  }
-  const date = new Date(dateString);
-  return date.toLocaleDateString("id-ID", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+function statusFor(status: string) {
+  return (
+    STATUS[status] ?? {
+      label: status.toUpperCase(),
+      variant: "outline" as const,
+      tone: "muted" as const,
+    }
+  );
+}
 
-// Helper function untuk get status badge variant
-const getStatusBadgeVariant = (
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" => {
-  switch (status) {
-    case "pending":
-      return "secondary";
-    case "approved":
-      return "default";
-    case "rejected":
-      return "destructive";
-    case "cancelled":
-      return "outline";
-    default:
-      return "outline";
-  }
-};
+/** Card chrome shared by every state, so the heading never disappears mid-load. */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2.5">
+          <span className="icon-chip h-9 w-9">
+            <Package className="h-[18px] w-[18px]" />
+          </span>
+          Riwayat Perubahan Paket
+        </CardTitle>
+        <CardDescription>
+          Riwayat semua permintaan perubahan paket Anda.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
 
-// Helper function untuk get status badge class
-const getStatusBadgeClass = (status: string): string => {
-  switch (status) {
-    case "pending":
-      return "bg-yellow-500/20 text-yellow-600 border-yellow-500";
-    case "approved":
-      return "bg-green-500/20 text-green-600 border-green-500";
-    case "rejected":
-      return "bg-red-500/20 text-red-600 border-red-500";
-    case "cancelled":
-      return "bg-gray-500/20 text-gray-600 border-gray-500";
-    default:
-      return "";
-  }
-};
+/** Label/value pair inside a request's detail grid. */
+function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="eyebrow">{label}</p>
+      <p className="mt-0.5 break-words text-sm">{value}</p>
+    </div>
+  );
+}
 
 export default function PackageChangeHistory() {
   const [data, setData] = useState<PackageChangeRequest[]>([]);
@@ -116,184 +124,112 @@ export default function PackageChangeHistory() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <Package className="h-5 w-5" />
-            </span>
-            Riwayat Perubahan Paket
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ListSkeleton rows={2} />
-        </CardContent>
-      </Card>
+      <Shell>
+        <ListSkeleton rows={2} />
+      </Shell>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <Package className="h-5 w-5" />
-            </span>
-            Riwayat Perubahan Paket
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-destructive">{error}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <Shell>
+        <EmptyState icon={Package} title="Gagal memuat" description={error} />
+      </Shell>
     );
   }
 
   if (data.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <Package className="h-5 w-5" />
-            </span>
-            Riwayat Perubahan Paket
-          </CardTitle>
-          <CardDescription>
-            Riwayat semua permintaan perubahan paket Anda
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EmptyState
-            icon={Package}
-            title="Belum ada riwayat"
-            description="Permintaan perubahan paket Anda akan muncul di sini."
-          />
-        </CardContent>
-      </Card>
+      <Shell>
+        <EmptyState
+          icon={Package}
+          title="Belum ada riwayat"
+          description="Permintaan perubahan paket Anda akan muncul di sini."
+        />
+      </Shell>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <span className="icon-chip">
-            <Package className="h-5 w-5" />
-          </span>
-          Riwayat Perubahan Paket
-        </CardTitle>
-        <CardDescription>
-          Riwayat semua permintaan perubahan paket Anda
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {data.map((request) => (
-            <div
+    <Shell>
+      <Timeline>
+        {data.map((request, index) => {
+          const status = statusFor(request.status);
+          return (
+            <TimelineItem
               key={request.id}
-              className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-muted-foreground" />
-                  <h4 className="font-semibold">
-                    {request.currentPackageName} →{" "}
+              icon={Package}
+              tone={status.tone}
+              isLast={index === data.length - 1}
+              title={
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {request.currentPackageName}
+                  <ArrowRight
+                    className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                    aria-label="menjadi"
+                  />
+                  <span className="text-brand">
                     {request.requestedPackageName}
-                  </h4>
-                </div>
-                <Badge
-                  variant={getStatusBadgeVariant(request.status)}
-                  className={getStatusBadgeClass(request.status)}
-                >
-                  {request.status.toUpperCase()}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-muted-foreground">
-                        Paket Saat Ini
-                      </p>
-                      <p>
-                        {request.currentPackageName} (
-                        {formatCurrency(request.currentPackagePrice)})
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-muted-foreground">
-                        Paket yang Diminta
-                      </p>
-                      <p>
-                        {request.requestedPackageName} (
-                        {formatCurrency(request.requestedPackagePrice)})
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-muted-foreground">
-                        Tanggal Request
-                      </p>
-                      <p>{formatDate(request.createdAt)}</p>
-                    </div>
-                  </div>
-
+                  </span>
+                </span>
+              }
+              meta={<span>Diajukan {formatDate(request.createdAt)}</span>}
+              trailing={<Badge variant={status.variant}>{status.label}</Badge>}
+            >
+              <div className="tile space-y-3 p-3.5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Detail
+                    label="Paket Saat Ini"
+                    value={
+                      <>
+                        {request.currentPackageName}{" "}
+                        <span className="tabular text-muted-foreground">
+                          ({formatCurrency(request.currentPackagePrice)})
+                        </span>
+                      </>
+                    }
+                  />
+                  <Detail
+                    label="Paket Diminta"
+                    value={
+                      <>
+                        {request.requestedPackageName}{" "}
+                        <span className="tabular text-muted-foreground">
+                          ({formatCurrency(request.requestedPackagePrice)})
+                        </span>
+                      </>
+                    }
+                  />
                   {request.updatedAt && (
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-muted-foreground">
-                          Tanggal Update
-                        </p>
-                        <p>{formatDate(request.updatedAt)}</p>
-                      </div>
-                    </div>
+                    <Detail
+                      label="Terakhir Diperbarui"
+                      value={formatDate(request.updatedAt)}
+                    />
+                  )}
+                  {request.approvedBy && (
+                    <Detail
+                      label="Ditinjau Oleh"
+                      value={
+                        <span className="inline-flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                          {request.approvedBy}
+                        </span>
+                      }
+                    />
                   )}
                 </div>
+
+                {request.notes && (
+                  <div className="flex items-start gap-2 border-t pt-3 text-sm text-muted-foreground">
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p className="min-w-0 break-words">{request.notes}</p>
+                  </div>
+                )}
               </div>
-
-              {request.approvedBy && (
-                <div className="flex items-start gap-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-muted-foreground">
-                      Disetujui/Ditolak oleh
-                    </p>
-                    <p>{request.approvedBy}</p>
-                  </div>
-                </div>
-              )}
-
-              {request.notes && (
-                <div className="flex items-start gap-2 text-sm">
-                  <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-muted-foreground">
-                      Catatan
-                    </p>
-                    <p className="text-muted-foreground">{request.notes}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            </TimelineItem>
+          );
+        })}
+      </Timeline>
+    </Shell>
   );
 }

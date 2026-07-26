@@ -94,17 +94,21 @@ export default function PaymentProofCard({
   };
 
   return (
-    <Card className="mb-8 border-primary/50">
+    // Warning-toned rather than brand-toned: this card is an outstanding
+    // obligation, and it must not read like just another offer on the page.
+    <Card className="border-warning/40 shadow-pop">
       <CardHeader>
-        <CardTitle className="flex items-center text-lg">
-          <Receipt className="mr-2 h-5 w-5" />
+        <CardTitle className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/12 text-warning ring-1 ring-inset ring-warning/25">
+            <Receipt className="h-[18px] w-[18px]" />
+          </span>
           Menunggu Bukti Pembayaran
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="mt-1.5">
           Permintaan boost ke{" "}
-          <b className="text-primary">{request.requestedPackageName}</b> selama{" "}
-          {request.durationKey.replace("_", " ")} sebesar{" "}
-          <b className="text-primary">
+          <b className="text-foreground">{request.requestedPackageName}</b>{" "}
+          selama {request.durationKey.replace("_", " ")} sebesar{" "}
+          <b className="tabular text-foreground">
             {currencyFormatter.format(request.price)}
           </b>{" "}
           ({paymentMethodLabel[request.paymentMethod] || request.paymentMethod}
@@ -121,14 +125,15 @@ export default function PaymentProofCard({
             accept={ACCEPTED_TYPES}
             onChange={handleFileChange}
             disabled={isUploading}
+            className="cursor-pointer py-2.5 file:mr-3 file:cursor-pointer file:rounded-md file:bg-muted file:px-3 file:py-1.5"
           />
           {file && (
-            <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+            <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/40 py-1.5 pl-3 pr-1.5 text-sm">
               <span className="truncate">{file.name}</span>
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon-sm"
                 onClick={clearFile}
                 disabled={isUploading}
                 aria-label="Hapus file terpilih"
@@ -161,11 +166,7 @@ export default function PaymentProofCard({
           }}
           disabled={isUploading || !file}
         >
-          {isUploading ? (
-            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Upload className="mr-2 h-4 w-4" />
-          )}
+          {isUploading ? <LoaderCircle className="animate-spin" /> : <Upload />}
           {isUploading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
         </Button>
       </CardContent>

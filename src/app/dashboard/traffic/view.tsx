@@ -1,7 +1,13 @@
 "use client";
 
 import type { CustomerTrafficUsage } from "../actions";
-import { Activity, ArrowDownToLine, ArrowUpToLine, Router } from "lucide-react";
+import {
+  Activity,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  CalendarDays,
+  Database,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,20 +16,85 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { formatBytes, formatDateTime } from "@/lib/format";
 import CustomerTrafficLiveCard from "@/components/customer-traffic-live-card";
 
-function formatBytes(value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "0 B";
-  }
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let size = value;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
-  }
-  return `${size.toFixed(size >= 100 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+interface Period {
+  downloadBytes: number;
+  uploadBytes: number;
+  totalBytes: number;
+}
+
+/**
+ * Period summary: the total as the headline, with the download/upload split
+ * shown both as figures and as a single proportion bar. The bar answers "is my
+ * usage mostly down or up?" at a glance, which two numbers side by side don't.
+ */
+function PeriodCard({
+  title,
+  subtitle,
+  period,
+}: {
+  title: string;
+  subtitle: string;
+  period: Period;
+}) {
+  const total = period.totalBytes || 1;
+  const downloadShare = Math.round((period.downloadBytes / total) * 100);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2.5">
+          <span className="icon-chip h-9 w-9">
+            <CalendarDays className="h-[18px] w-[18px]" />
+          </span>
+          {title}
+        </CardTitle>
+        <CardDescription>{subtitle}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="tabular text-3xl font-bold leading-none tracking-tight">
+          {formatBytes(period.totalBytes)}
+        </p>
+
+        <div
+          className="flex h-2 overflow-hidden rounded-full bg-muted"
+          role="img"
+          aria-label={`Download ${downloadShare} persen dari total pemakaian`}
+        >
+          <div
+            className="bg-brand transition-[width] duration-500"
+            style={{ width: `${downloadShare}%` }}
+          />
+          <div className="flex-1 bg-success" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
+              Download
+            </p>
+            <p className="tabular mt-1 font-semibold">
+              {formatBytes(period.downloadBytes)}
+            </p>
+          </div>
+          <div>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ArrowUpToLine className="h-3.5 w-3.5 text-success" />
+              Upload
+            </p>
+            <p className="tabular mt-1 font-semibold">
+              {formatBytes(period.uploadBytes)}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function TrafficView({
@@ -35,160 +106,134 @@ export default function TrafficView({
 }) {
   if (!usage.hasPppoe) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity size={20} />
-            Pemakaian Traffic
-          </CardTitle>
-          <CardDescription>
-            Akun ini belum memiliki layanan PPPoE yang bisa dimonitor.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="space-y-6">
+        <PageHeader
+          icon={Activity}
+          eyebrow="Pemakaian"
+          title="Pemakaian Traffic"
+        />
+        <Card>
+          <CardContent className="pt-5">
+            <EmptyState
+              icon={Database}
+              title="Belum ada layanan yang bisa dimonitor"
+              description="Akun ini belum memiliki layanan PPPoE, sehingga pemakaian data tidak dapat ditampilkan."
+            />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
+  // The busiest day sets the scale for every bar, so the history reads as one
+  // comparable series rather than 30 unrelated rows.
+  const peakBytes = Math.max(
+    1,
+    ...usage.dailyHistory.map((day) => day.totalBytes),
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Activity className="h-7 w-7" />
-            Pemakaian Traffic
-          </h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Ringkasan penggunaan data harian dan bulan berjalan untuk{" "}
+      <PageHeader
+        icon={Activity}
+        eyebrow="Pemakaian"
+        title="Pemakaian Traffic"
+        description={
+          <>
+            Ringkasan penggunaan data untuk{" "}
             <span className="font-medium text-foreground">
               {usage.pppoeUsername}
             </span>
             .
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {usage.stale && <Badge variant="outline">Data terakhir</Badge>}
-          {usage.lastCollectedAt && (
-            <span className="text-xs text-muted-foreground">
-              Update: {new Date(usage.lastCollectedAt).toLocaleString()}
-            </span>
-          )}
-        </div>
-      </div>
+          </>
+        }
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {usage.stale && <Badge variant="warning">Data terakhir</Badge>}
+            {usage.lastCollectedAt && (
+              <span className="text-xs text-muted-foreground">
+                Update: {formatDateTime(usage.lastCollectedAt)}
+              </span>
+            )}
+          </div>
+        }
+      />
 
       <CustomerTrafficLiveCard enabled={liveEnabled} intervalMs={10000} />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Hari Ini</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <ArrowDownToLine size={14} />
-                Download
-              </p>
-              <p className="text-xl font-semibold mt-1">
-                {formatBytes(usage.today.downloadBytes)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <ArrowUpToLine size={14} />
-                Upload
-              </p>
-              <p className="text-xl font-semibold mt-1">
-                {formatBytes(usage.today.uploadBytes)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <Router size={14} />
-                Total
-              </p>
-              <p className="text-xl font-semibold mt-1">
-                {formatBytes(usage.today.totalBytes)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Bulan Ini</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <ArrowDownToLine size={14} />
-                Download
-              </p>
-              <p className="text-xl font-semibold mt-1">
-                {formatBytes(usage.currentMonth.downloadBytes)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <ArrowUpToLine size={14} />
-                Upload
-              </p>
-              <p className="text-xl font-semibold mt-1">
-                {formatBytes(usage.currentMonth.uploadBytes)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <Router size={14} />
-                Total
-              </p>
-              <p className="text-xl font-semibold mt-1">
-                {formatBytes(usage.currentMonth.totalBytes)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <PeriodCard
+          title="Hari Ini"
+          subtitle="Sejak pukul 00.00 waktu setempat."
+          period={usage.today}
+        />
+        <PeriodCard
+          title="Bulan Ini"
+          subtitle="Akumulasi sejak tanggal 1."
+          period={usage.currentMonth}
+        />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat 30 Hari</CardTitle>
+          <CardTitle className="flex items-center gap-2.5">
+            <span className="icon-chip h-9 w-9">
+              <Database className="h-[18px] w-[18px]" />
+            </span>
+            Riwayat 30 Hari
+          </CardTitle>
           <CardDescription>
-            Nilai di bawah merupakan akumulasi download dan upload per hari.
+            Panjang bar dihitung relatif terhadap hari dengan pemakaian
+            tertinggi.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {usage.dailyHistory.length > 0 ? (
-              usage.dailyHistory.map((day) => (
-                <div
-                  key={day.date}
-                  className="grid grid-cols-1 gap-3 rounded-lg border p-4 sm:grid-cols-[140px_1fr_1fr_1fr]"
-                >
-                  <div className="font-medium">{day.date}</div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Download</p>
-                    <p className="font-medium">
-                      {formatBytes(day.downloadBytes)}
-                    </p>
+          {usage.dailyHistory.length > 0 ? (
+            <ul className="divide-y divide-border/70 overflow-hidden rounded-xl border">
+              {usage.dailyHistory.map((day) => (
+                <li key={day.date} className="bg-card p-3.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="tabular text-sm font-medium">
+                      {day.date}
+                    </span>
+                    <span className="tabular text-sm font-semibold">
+                      {formatBytes(day.totalBytes)}
+                    </span>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Upload</p>
-                    <p className="font-medium">
-                      {formatBytes(day.uploadBytes)}
-                    </p>
+
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-brand-gradient"
+                      style={{
+                        width: `${Math.max(2, (day.totalBytes / peakBytes) * 100)}%`,
+                      }}
+                    />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total</p>
-                    <p className="font-medium">{formatBytes(day.totalBytes)}</p>
+
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
+                      <span className="tabular">
+                        {formatBytes(day.downloadBytes)}
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ArrowUpToLine className="h-3.5 w-3.5 text-success" />
+                      <span className="tabular">
+                        {formatBytes(day.uploadBytes)}
+                      </span>
+                    </span>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                Belum ada data traffic yang tersimpan.
-              </div>
-            )}
-          </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              icon={Database}
+              title="Belum ada data traffic"
+              description="Pemakaian harian akan muncul di sini setelah sistem mengumpulkan sample pertama."
+            />
+          )}
         </CardContent>
       </Card>
     </div>

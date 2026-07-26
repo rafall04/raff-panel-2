@@ -6,6 +6,8 @@ import { Receipt, ArrowDownCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { Timeline, TimelineItem } from "@/components/ui/timeline";
+import { formatDate } from "@/lib/format";
 
 const MONTHS = [
   "",
@@ -80,44 +82,35 @@ export default function BillingHistory() {
   }
 
   return (
-    <div className="space-y-3">
-      {items.map((it) => (
-        <div
+    <Timeline>
+      {items.map((it, index) => (
+        <TimelineItem
           key={it.id}
-          className="tile flex items-center justify-between gap-3"
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
-              <ArrowDownCircle className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate font-semibold">
-                {MONTHS[it.periodMonth] || "Periode"} {it.periodYear}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(it.createdAt).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-                {it.paymentMethod ? ` • ${it.paymentMethod}` : ""}
-              </p>
-            </div>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="font-bold">{rupiah(it.amountPaid)}</p>
-            <Badge
-              className={
-                it.status === "paid"
-                  ? "border-transparent bg-success/15 text-success hover:bg-success/15"
-                  : "border-transparent bg-warning/15 text-warning hover:bg-warning/15"
-              }
-            >
-              {it.status === "paid" ? "Lunas" : "Sebagian"}
-            </Badge>
-          </div>
-        </div>
+          icon={ArrowDownCircle}
+          tone={it.status === "paid" ? "success" : "warning"}
+          isLast={index === items.length - 1}
+          title={`${MONTHS[it.periodMonth] || "Periode"} ${it.periodYear}`}
+          meta={
+            <>
+              <span>{formatDate(it.createdAt)}</span>
+              {it.paymentMethod ? (
+                <>
+                  <span aria-hidden="true">•</span>
+                  <span>{it.paymentMethod}</span>
+                </>
+              ) : null}
+            </>
+          }
+          trailing={
+            <>
+              <p className="tabular font-bold">{rupiah(it.amountPaid)}</p>
+              <Badge variant={it.status === "paid" ? "success" : "warning"}>
+                {it.status === "paid" ? "Lunas" : "Sebagian"}
+              </Badge>
+            </>
+          }
+        />
       ))}
-    </div>
+    </Timeline>
   );
 }

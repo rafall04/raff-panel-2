@@ -125,17 +125,22 @@ export default function NewsDisplay() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {news.map((item) => (
-        <div key={item.id} className="tile">
-          <h4 className="font-semibold">{item.title}</h4>
-          <p className="mt-1 text-sm text-muted-foreground">{item.content}</p>
+        <article
+          key={item.id}
+          className="tile flex flex-col border-l-[3px] border-l-brand/70"
+        >
+          <h4 className="font-semibold leading-snug">{item.title}</h4>
+          <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+            {item.content}
+          </p>
           {item.createdAt && (
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="mt-3 text-xs text-muted-foreground/80">
               {formatDate(item.createdAt)}
             </p>
           )}
-        </div>
+        </article>
       ))}
     </div>
   );

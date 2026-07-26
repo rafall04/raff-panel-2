@@ -25,23 +25,23 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/25 px-6 py-10 text-center",
         className,
       )}
     >
       <span
         className={cn(
-          "mb-3 flex h-14 w-14 items-center justify-center rounded-full",
+          "mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl",
           tone === "brand"
             ? "bg-brand/12 text-brand ring-1 ring-inset ring-brand/20"
-            : "bg-muted text-muted-foreground",
+            : "bg-muted text-muted-foreground ring-1 ring-inset ring-border",
         )}
       >
-        <Icon className="h-7 w-7" />
+        <Icon className="h-6 w-6" />
       </span>
       <p className="font-semibold">{title}</p>
       {description ? (
-        <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {description}
         </p>
       ) : null}

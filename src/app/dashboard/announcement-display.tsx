@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Megaphone } from "lucide-react";
 
 interface Announcement {
@@ -99,11 +100,9 @@ export default function AnnouncementDisplay() {
   }, []);
 
   if (loading) {
-    return (
-      <p className="text-center text-sm text-muted-foreground">
-        Memuat pengumuman...
-      </p>
-    );
+    // Reserve the height a single announcement would take so the hero below
+    // does not jump down when one arrives.
+    return <Skeleton className="h-[74px] w-full rounded-xl" />;
   }
 
   if (error) {
@@ -120,19 +119,32 @@ export default function AnnouncementDisplay() {
   }
 
   return (
-    <div className="space-y-2">
+    <div
+      className="space-y-3"
+      // Announcements arrive by polling, so a customer reading the page must be
+      // told rather than left to notice.
+      aria-live="polite"
+    >
       {announcements.map((ann) => (
-        <Alert key={ann.id}>
-          <Megaphone className="h-4 w-4" />
-          <AlertDescription className="space-y-1">
-            <p>{ann.message}</p>
+        <div
+          key={ann.id}
+          className="flex items-start gap-3 rounded-xl border border-brand/25 bg-brand/[0.07] p-3.5 sm:p-4"
+        >
+          <span className="icon-chip h-9 w-9">
+            <Megaphone className="h-[18px] w-[18px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow text-brand">Pengumuman</p>
+            <p className="mt-1 whitespace-pre-line break-words text-sm leading-relaxed">
+              {ann.message}
+            </p>
             {ann.createdAt && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 {formatDate(ann.createdAt)}
               </p>
             )}
-          </AlertDescription>
-        </Alert>
+          </div>
+        </div>
       ))}
     </div>
   );

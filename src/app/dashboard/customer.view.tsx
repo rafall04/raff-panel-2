@@ -1,12 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
 import type { CustomerInfo } from "./actions";
-import type { LucideIcon } from "lucide-react";
 import { User, Package, Calendar, ShieldCheck, MapPin } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InfoRow } from "@/components/ui/info-row";
 
 const PaymentStatusBadge = ({ status }: { status?: string | null }) => {
   // If status is null/undefined, don't render anything (feature is hidden)
@@ -16,39 +15,27 @@ const PaymentStatusBadge = ({ status }: { status?: string | null }) => {
 
   const statusUpper = status.toUpperCase();
   if (statusUpper === "PAID") {
-    return (
-      <Badge className="border-transparent bg-success text-success-foreground hover:bg-success">
-        {status}
-      </Badge>
-    );
+    return <Badge variant="success">{status}</Badge>;
   }
   if (statusUpper === "UNPAID") {
-    return <Badge variant="destructive">{status}</Badge>;
+    return <Badge variant="danger">{status}</Badge>;
   }
   return <Badge variant="secondary">{status}</Badge>;
 };
 
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: ReactNode;
-}) {
+function SubscriptionCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <div className="text-sm font-medium">{value}</div>
-      </div>
-    </div>
+    <Card className="flex flex-col">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2.5">
+          <span className="icon-chip h-9 w-9">
+            <User className="h-[18px] w-[18px]" />
+          </span>
+          Langganan &amp; Tagihan
+        </CardTitle>
+      </CardHeader>
+      {children}
+    </Card>
   );
 }
 
@@ -59,15 +46,7 @@ export default function CustomerView({
 }) {
   if (!customerInfo) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <User className="h-5 w-5" />
-            </span>
-            Langganan &amp; Tagihan
-          </CardTitle>
-        </CardHeader>
+      <SubscriptionCard>
         <CardContent>
           <EmptyState
             icon={User}
@@ -75,48 +54,38 @@ export default function CustomerView({
             description="Kami belum bisa mengambil detail akun Anda. Coba muat ulang beberapa saat lagi."
           />
         </CardContent>
-      </Card>
+      </SubscriptionCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <span className="icon-chip">
-            <User className="h-5 w-5" />
-          </span>
-          Langganan &amp; Tagihan
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Highlighted plan */}
-        <div className="rounded-xl border border-brand/20 bg-brand/10 p-4">
+    <SubscriptionCard>
+      <CardContent className="flex flex-1 flex-col gap-4">
+        {/* The plan is the one thing customers open this card for, so it gets
+            the brand wash and the largest type on the card. */}
+        <div className="brand-panel">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-                Paket Anda
-              </p>
-              <p className="mt-1 truncate text-lg font-bold">
+              <p className="eyebrow text-brand">Paket Anda</p>
+              <p className="mt-1 truncate text-lg font-bold leading-tight">
                 {customerInfo.package || customerInfo.packageName || "N/A"}
               </p>
               {customerInfo.monthlyBillFormatted && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  <span className="tabular font-semibold text-foreground">
                     {customerInfo.monthlyBillFormatted}
                   </span>{" "}
                   / bulan
                 </p>
               )}
             </div>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-brand-foreground shadow-brand-glow">
+            <span className="icon-chip-solid">
               <Package className="h-5 w-5" />
             </span>
           </div>
         </div>
 
-        {/* Details */}
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {customerInfo.dueDateFormatted && (
             <InfoRow
               icon={Calendar}
@@ -134,14 +103,10 @@ export default function CustomerView({
           <InfoRow
             icon={MapPin}
             label="Alamat"
-            value={
-              <span className="whitespace-normal">
-                {customerInfo.address || "—"}
-              </span>
-            }
+            value={customerInfo.address || "—"}
           />
         </div>
       </CardContent>
-    </Card>
+    </SubscriptionCard>
   );
 }

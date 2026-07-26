@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import { submitReport, uploadReportPhoto } from "./actions";
-import { Send, LoaderCircle, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Send,
+  LoaderCircle,
+  X,
+  PowerOff,
+  Gauge,
+  Repeat,
+  Wifi,
+  Wrench,
+  ClipboardList,
+  ImagePlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -21,6 +33,25 @@ import { useRouter } from "next/navigation";
 interface ReportFormProps {
   onSuccess?: () => void;
 }
+
+/**
+ * Problem categories. These carried emoji before (💀 🐌 🔄) — emoji render
+ * differently on every platform, can't be recoloured by the theme, and read as
+ * jokey on a fault report. The `value`s are the backend's contract and are
+ * unchanged.
+ */
+const REPORT_CATEGORIES: {
+  value: string;
+  label: string;
+  icon: LucideIcon;
+}[] = [
+  { value: "MATI", label: "Internet Mati Total", icon: PowerOff },
+  { value: "LEMOT", label: "Internet Lemot", icon: Gauge },
+  { value: "PUTUS_NYAMBUNG", label: "Putus-Nyambung", icon: Repeat },
+  { value: "WIFI", label: "Masalah WiFi", icon: Wifi },
+  { value: "HARDWARE", label: "Masalah Hardware", icon: Wrench },
+  { value: "GENERAL", label: "Lainnya / Umum", icon: ClipboardList },
+];
 
 /** Promise-wrapped FileReader so a batch of previews keeps its selection order. */
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -278,14 +309,14 @@ export default function ReportForm({ onSuccess }: ReportFormProps) {
                 <SelectValue placeholder="Pilih kategori" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MATI">💀 Internet Mati Total</SelectItem>
-                <SelectItem value="LEMOT">🐌 Internet Lemot</SelectItem>
-                <SelectItem value="PUTUS_NYAMBUNG">
-                  🔄 Putus-Nyambung
-                </SelectItem>
-                <SelectItem value="WIFI">📶 Masalah WiFi</SelectItem>
-                <SelectItem value="HARDWARE">🔧 Masalah Hardware</SelectItem>
-                <SelectItem value="GENERAL">📋 Lainnya/Umum</SelectItem>
+                {REPORT_CATEGORIES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <span className="flex items-center gap-2.5">
+                      <option.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      {option.label}
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -304,10 +335,11 @@ export default function ReportForm({ onSuccess }: ReportFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="photos" className="text-sm font-medium">
-              Upload Foto{" "}
-              <span className="text-xs text-muted-foreground font-normal">
-                (Opsional, maks 3 foto, 5MB per foto)
+            <Label htmlFor="photos" className="flex items-center gap-2">
+              <ImagePlus className="h-4 w-4 text-muted-foreground" />
+              Upload Foto
+              <span className="text-xs font-normal text-muted-foreground">
+                (opsional)
               </span>
             </Label>
             <Input
@@ -319,34 +351,40 @@ export default function ReportForm({ onSuccess }: ReportFormProps) {
                 void handlePhotoChange(e);
               }}
               disabled={photos.length >= 3 || isLoading || isUploading}
-              className="cursor-pointer"
+              className="cursor-pointer py-2.5 file:mr-3 file:cursor-pointer file:rounded-md file:bg-muted file:px-3 file:py-1.5"
             />
-            {photos.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Foto terpilih: {photos.length} / 3
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {photos.length > 0
+                ? `Terpilih ${photos.length} dari 3 foto.`
+                : "Maksimal 3 foto, 5MB per foto. Foto membantu teknisi mendiagnosis lebih cepat."}
+            </p>
             {photoPreviews.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mt-2">
+              <div className="mt-1 grid grid-cols-3 gap-2">
                 {photoPreviews.map((preview, index) => (
-                  <div key={index} className="relative group aspect-square">
+                  <div
+                    key={index}
+                    className="relative aspect-square overflow-hidden rounded-lg border"
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover rounded border"
+                      className="h-full w-full object-cover"
                     />
+                    {/* Always visible: the old hover-only control was
+                        unreachable on the phones this form is filled on. */}
                     <button
                       type="button"
                       onClick={() => {
                         removePhoto(index);
                       }}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Hapus foto ${index + 1}`}
+                      className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-slate-950/70 text-white transition-colors hover:bg-destructive"
                       disabled={isLoading || isUploading}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
-                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">
+                    <div className="tabular absolute bottom-1 left-1 rounded bg-slate-950/70 px-1.5 py-0.5 text-[10px] text-white">
                       {(photos[index]?.size || 0) / 1024 / 1024 < 1
                         ? `${Math.round((photos[index]?.size || 0) / 1024)}KB`
                         : `${Math.round(((photos[index]?.size || 0) / 1024 / 1024) * 10) / 10}MB`}
@@ -362,14 +400,11 @@ export default function ReportForm({ onSuccess }: ReportFormProps) {
             type="submit"
             disabled={isLoading || isUploading}
             className="w-full"
-            size="default"
           >
-            {isLoading ? (
-              <LoaderCircle className="animate-spin mr-2" />
-            ) : isUploading ? (
-              <LoaderCircle className="animate-spin mr-2" />
+            {isLoading || isUploading ? (
+              <LoaderCircle className="animate-spin" />
             ) : (
-              <Send className="mr-2" />
+              <Send />
             )}
             {isLoading
               ? "Mengirim..."
@@ -380,9 +415,12 @@ export default function ReportForm({ onSuccess }: ReportFormProps) {
                   : "Kirim Laporan"}
           </Button>
           {ticketId && (
-            <div className="text-sm text-muted-foreground text-center">
-              Laporan sudah tercatat dengan Ticket ID: {ticketId}
-            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Laporan sudah tercatat dengan Ticket ID:{" "}
+              <span className="tabular font-medium text-foreground">
+                {ticketId}
+              </span>
+            </p>
           )}
         </CardFooter>
       </Card>

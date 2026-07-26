@@ -1,7 +1,8 @@
 import { getWifiPageData } from "../actions";
 import WifiView from "./view";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Router, Wifi } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -9,16 +10,17 @@ export default async function WifiPage() {
   const ssidInfo = await getWifiPageData();
 
   if (!ssidInfo) {
+    // Keeps the page header so the customer still knows where they are, and
+    // stays in Indonesian like the rest of the portal — this used to be a raw
+    // English "Error" alert about environment configuration.
     return (
-      <div className="w-full flex items-center justify-center p-4">
-        <Alert variant="destructive" className="max-w-lg">
-          <Terminal className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Could not retrieve device information. Please ensure your
-            environment configuration is correct and try again later.
-          </AlertDescription>
-        </Alert>
+      <div className="space-y-6">
+        <PageHeader icon={Wifi} eyebrow="Jaringan" title="Kelola WiFi" />
+        <EmptyState
+          icon={Router}
+          title="Data perangkat belum bisa ditampilkan"
+          description="Kami sedang tidak bisa menghubungi router Anda. Coba muat ulang halaman ini beberapa saat lagi, atau hubungi admin lewat WhatsApp bila terus berulang."
+        />
       </div>
     );
   }

@@ -10,7 +10,11 @@ import {
   Router,
   Pencil,
   RotateCw,
-  CheckCircle2,
+  Eye,
+  EyeOff,
+  Activity,
+  Receipt,
+  Wifi,
   ShieldCheck,
 } from "lucide-react";
 import { requestOtp } from "@/utils/auth.server";
@@ -35,6 +39,24 @@ const RESEND_COOLDOWN_SECONDS = 60;
 /** Mirrors the backend's 5-minute OTP TTL so we can stop claiming it is valid. */
 const OTP_VALID_SECONDS = 5 * 60;
 
+const HIGHLIGHTS = [
+  {
+    icon: Activity,
+    title: "Pantau koneksi real-time",
+    body: "Status jaringan, perangkat terhubung, dan pemakaian data.",
+  },
+  {
+    icon: Receipt,
+    title: "Tagihan & riwayat transparan",
+    body: "Paket aktif, jatuh tempo, dan seluruh riwayat dalam satu tempat.",
+  },
+  {
+    icon: Wifi,
+    title: "Kendali penuh atas Wi-Fi",
+    body: "Ubah nama & kata sandi, reboot router, laporkan gangguan.",
+  },
+];
+
 function formatCountdown(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -52,6 +74,7 @@ export default function LoginForm({
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -202,57 +225,100 @@ export default function LoginForm({
   };
 
   return (
-    <main className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-2">
-      {/* Desktop brand panel */}
-      <div className="relative hidden overflow-hidden bg-brand-gradient p-12 text-brand-foreground lg:flex lg:flex-col lg:justify-between">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-28 -left-16 h-80 w-80 rounded-full bg-black/10 blur-3xl" />
+    <main className="grid min-h-dvh w-full grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
+      {/* ── Brand panel (lg and up) ─────────────────────────────────────── */}
+      <div className="relative hidden overflow-hidden bg-brand-gradient p-12 text-brand-foreground lg:flex lg:flex-col lg:justify-between xl:p-16">
+        {/* Layered light. Radial gradients rather than blurred divs: same
+            depth, none of the compositing cost. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(50% 45% at 85% 8%, rgba(255,255,255,0.22), transparent 70%), radial-gradient(45% 45% at 5% 100%, rgba(0,0,0,0.22), transparent 70%)",
+          }}
+        />
+        {/* Faint grid — reads as "network infrastructure" without a stock photo. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.13]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            maskImage:
+              "radial-gradient(75% 65% at 50% 40%, black, transparent 78%)",
+            WebkitMaskImage:
+              "radial-gradient(75% 65% at 50% 40%, black, transparent 78%)",
+          }}
+        />
+
         <div className="relative flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-inset ring-white/25">
             <Router className="h-6 w-6" />
           </span>
-          <span className="text-lg font-semibold">{companyName}</span>
+          <span className="text-lg font-semibold tracking-tight">
+            {companyName}
+          </span>
         </div>
-        <div className="relative max-w-md">
-          <h1 className="text-4xl font-bold leading-tight">
-            Portal Pelanggan {companyName}
-          </h1>
-          <p className="mt-4 text-lg text-brand-foreground/80">
-            Kelola layanan internet Anda dengan mudah — WiFi, tagihan, dan
-            laporan gangguan dalam satu tempat.
+
+        <div className="relative max-w-lg">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-foreground/70">
+            Portal Pelanggan
           </p>
-          <ul className="mt-8 space-y-3 text-sm">
-            <li className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              Pantau status koneksi &amp; perangkat secara real-time
-            </li>
-            <li className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              Cek tagihan, paket, dan riwayat dalam satu tempat
-            </li>
-            <li className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              Kelola WiFi &amp; laporkan gangguan kapan saja
-            </li>
+          <h1 className="mt-4 text-4xl font-bold leading-[1.1] xl:text-[44px]">
+            Internet Anda,
+            <br />
+            sepenuhnya dalam kendali.
+          </h1>
+          <p className="mt-5 text-lg leading-relaxed text-brand-foreground/85">
+            Satu tempat untuk memantau koneksi, mengatur Wi-Fi, dan mengurus
+            tagihan — kapan pun, dari perangkat apa pun.
+          </p>
+
+          <ul className="mt-10 space-y-5">
+            {HIGHLIGHTS.map((item) => (
+              <li key={item.title} className="flex items-start gap-4">
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-inset ring-white/20">
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block font-semibold">{item.title}</span>
+                  <span className="block text-sm text-brand-foreground/75">
+                    {item.body}
+                  </span>
+                </span>
+              </li>
+            ))}
           </ul>
         </div>
+
         <p className="relative text-sm text-brand-foreground/70">
           © {new Date().getFullYear()} {companyName}
         </p>
       </div>
 
-      {/* Form panel */}
-      <div className="flex items-center justify-center p-6">
+      {/* ── Form panel ──────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-center px-gutter py-10">
         <div className="w-full max-w-md">
-          {/* The desktop panel is hidden below lg, so without this the whole
+          {/* The brand panel is hidden below lg, so without this the whole
               brand disappears on exactly the devices most customers use. */}
           <div className="mb-8 flex flex-col items-center text-center lg:hidden">
-            <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-gradient text-brand-foreground shadow-brand-glow">
+            <span className="icon-chip-solid mb-4 h-16 w-16 rounded-2xl">
               <Router className="h-8 w-8" />
             </span>
-            <h1 className="text-2xl font-bold">{companyName}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold tracking-tight">{companyName}</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
               Masuk ke portal pelanggan Anda
+            </p>
+          </div>
+
+          <div className="mb-6 hidden lg:block">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Masuk ke akun Anda
+            </h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Pilih cara masuk yang paling praktis untuk Anda.
             </p>
           </div>
 
@@ -267,11 +333,11 @@ export default function LoginForm({
           <Tabs defaultValue="otp" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="otp">
-                <Smartphone className="mr-2 h-4 w-4" />
+                <Smartphone />
                 WhatsApp
               </TabsTrigger>
               <TabsTrigger value="password">
-                <Key className="mr-2 h-4 w-4" />
+                <Key />
                 Password
               </TabsTrigger>
             </TabsList>
@@ -323,9 +389,9 @@ export default function LoginForm({
                         disabled={!phoneNumber || loading}
                       >
                         {loading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="animate-spin" />
                         ) : (
-                          <Smartphone className="mr-2 h-4 w-4" />
+                          <Smartphone />
                         )}
                         Kirim Kode OTP
                       </Button>
@@ -350,6 +416,9 @@ export default function LoginForm({
                             required
                             disabled={loading}
                             maxLength={8}
+                            // Wide tracking + centred: a one-time code reads as
+                            // discrete digits, not a word.
+                            className="h-14 text-center text-2xl font-bold tracking-[0.5em] tabular md:text-2xl"
                           />
                           <p className="text-xs text-muted-foreground">
                             {otpExpiresIn > 0
@@ -364,9 +433,9 @@ export default function LoginForm({
                           disabled={otp.trim().length < 4 || loading}
                         >
                           {loading ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="animate-spin" />
                           ) : (
-                            <Key className="mr-2 h-4 w-4" />
+                            <Key />
                           )}
                           Masuk
                         </Button>
@@ -383,7 +452,7 @@ export default function LoginForm({
                             onClick={handleChangeNumber}
                             disabled={loading}
                           >
-                            <Pencil className="mr-2 h-4 w-4" />
+                            <Pencil />
                             Ubah nomor
                           </Button>
                           <Button
@@ -395,7 +464,7 @@ export default function LoginForm({
                             }}
                             disabled={loading || resendIn > 0}
                           >
-                            <RotateCw className="mr-2 h-4 w-4" />
+                            <RotateCw />
                             {resendIn > 0
                               ? `Kirim ulang (${resendIn})`
                               : "Kirim ulang"}
@@ -438,16 +507,35 @@ export default function LoginForm({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        autoComplete="current-password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          disabled={loading}
+                          className="pr-12"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={
+                            showPassword
+                              ? "Sembunyikan kata sandi"
+                              : "Tampilkan kata sandi"
+                          }
+                          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                     <Button
                       type="submit"
@@ -455,13 +543,13 @@ export default function LoginForm({
                       disabled={!username || !password || loading}
                     >
                       {loading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="animate-spin" />
                       ) : (
-                        <ArrowRight className="mr-2 h-4 w-4" />
+                        <ArrowRight />
                       )}
                       Masuk
                     </Button>
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-center text-xs leading-relaxed text-muted-foreground">
                       Belum punya password atau lupa? Gunakan tab WhatsApp untuk
                       masuk dengan kode OTP.
                     </p>

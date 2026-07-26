@@ -6,7 +6,14 @@ import type { CustomerInfo } from "../actions";
 import { requestSpeedBoost } from "../actions";
 import PaymentProofCard from "./payment-proof-card";
 import type { SpeedRequestAwaitingProof } from "@/services/speed-boost.service";
-import { ArrowRight, Check, LoaderCircle, Rocket } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Gauge,
+  LoaderCircle,
+  Rocket,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,20 +30,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader, SectionHeading } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { currencyFormatter } from "@/lib/format";
 import { toast } from "sonner";
 import { useSpeedOnDemand } from "../speed-on-demand-context";
 import type {
   SpeedBoostDurationKey,
   SpeedBoostPackage,
 } from "@/services/speed-boost.service";
-
-// Helper to format currency
-const currencyFormatter = new Intl.NumberFormat("id-ID", {
-  style: "currency",
-  currency: "IDR",
-  minimumFractionDigits: 0,
-});
 
 /**
  * The durations the backend actually offers for a package, in a stable order.
@@ -90,124 +93,6 @@ export default function SpeedBoostView({
     (pkg) => pkg.basePrice > currentPrice && offeredDurations(pkg).length > 0,
   );
 
-  // Bagian "beli boost" saja yang bergantung pada status fitur. Kartu bukti bayar sengaja berada
-  // di luar gerbang ini: kalau pelanggan sudah terlanjur meminta boost, kewajiban membayarnya tidak
-  // hilang hanya karena admin mematikan fitur atau daftar paket gagal dimuat — memblokirnya justru
-  // membuat pelanggan terjebak tanpa cara mengirim bukti.
-  const renderBoostSection = () => {
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <div className="text-center">
-            <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-2" />
-            <p className="text-muted-foreground">Memuat...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="w-full flex items-center justify-center p-4">
-          <Alert variant="destructive" className="max-w-lg">
-            <AlertDescription>
-              {error || "Gagal memuat informasi Speed On Demand."}
-            </AlertDescription>
-          </Alert>
-        </div>
-      );
-    }
-
-    if (!isEnabled) {
-      return (
-        <div className="w-full flex items-center justify-center p-4">
-          <Alert className="max-w-lg">
-            <Rocket className="h-4 w-4" />
-            <AlertDescription>
-              Speed On Demand sedang tidak tersedia saat ini.
-            </AlertDescription>
-          </Alert>
-        </div>
-      );
-    }
-
-    if (packages.length === 0) {
-      return (
-        <div className="w-full flex items-center justify-center p-4">
-          <Alert className="max-w-lg">
-            <Rocket className="h-4 w-4" />
-            <AlertDescription>
-              Tidak ada paket speed boost yang tersedia untuk paket Anda saat
-              ini.
-            </AlertDescription>
-          </Alert>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        <div className="space-y-4 mb-8">
-          <h2 className="text-xl font-semibold">Your Current Package</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-primary">
-                {currentCustomerInfo.packageName}
-              </CardTitle>
-              <CardDescription>
-                {currencyFormatter.format(currentCustomerInfo.monthlyBill)} /
-                month
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Available Speed Boosts</h2>
-          {availableUpgrades.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {availableUpgrades.map((pkg) => (
-                <Card key={pkg.name}>
-                  <CardHeader>
-                    <CardTitle>Boost to {pkg.profile}</CardTitle>
-                    <CardDescription>
-                      Temporarily upgrade to the speed of {pkg.name}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {offeredDurations(pkg).map((duration) => (
-                      <Button
-                        key={duration.key}
-                        onClick={() => handleBoostClick(pkg, duration)}
-                        variant="outline"
-                        className="w-full justify-between group"
-                      >
-                        <span>
-                          Boost for {duration.label} -{" "}
-                          {currencyFormatter.format(duration.price)}
-                        </span>
-                        <ArrowRight className="group-hover:translate-x-1 transition-transform h-4 w-4" />
-                      </Button>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 border rounded-lg">
-              <p className="text-lg text-muted-foreground">
-                You are already on the highest tier package.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                No speed boosts available.
-              </p>
-            </div>
-          )}
-        </div>
-      </>
-    );
-  };
-
   const handleBoostClick = (
     targetPackage: SpeedBoostPackage,
     duration: { key: SpeedBoostDurationKey; label: string; price: number },
@@ -254,15 +139,105 @@ export default function SpeedBoostView({
     });
   };
 
+  // Bagian "beli boost" saja yang bergantung pada status fitur. Kartu bukti bayar sengaja berada
+  // di luar gerbang ini: kalau pelanggan sudah terlanjur meminta boost, kewajiban membayarnya tidak
+  // hilang hanya karena admin mematikan fitur atau daftar paket gagal dimuat — memblokirnya justru
+  // membuat pelanggan terjebak tanpa cara mengirim bukti.
+  const renderBoostSection = () => {
+    if (loading) {
+      return (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-56 rounded-xl" />
+          ))}
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <EmptyState
+          icon={Rocket}
+          title="Gagal memuat paket boost"
+          description={error || "Gagal memuat informasi Speed On Demand."}
+        />
+      );
+    }
+
+    if (!isEnabled) {
+      return (
+        <EmptyState
+          icon={Rocket}
+          tone="brand"
+          title="Speed On Demand belum tersedia"
+          description="Layanan ini sedang tidak aktif. Coba lagi nanti atau hubungi admin."
+        />
+      );
+    }
+
+    if (packages.length === 0 || availableUpgrades.length === 0) {
+      return (
+        <EmptyState
+          icon={Sparkles}
+          tone="brand"
+          title="Anda sudah di paket tertinggi"
+          description="Tidak ada peningkatan kecepatan yang bisa ditambahkan ke paket Anda saat ini."
+        />
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {availableUpgrades.map((pkg) => (
+          <Card key={pkg.name} className="card-hover flex flex-col">
+            <CardHeader className="gap-3">
+              <span className="icon-chip-solid">
+                <Gauge className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="eyebrow">Tingkatkan ke</p>
+                <CardTitle className="mt-1 text-xl">{pkg.profile}</CardTitle>
+                <CardDescription className="mt-1">
+                  Setara dengan paket {pkg.name}, aktif sementara.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="mt-auto space-y-2">
+              {offeredDurations(pkg).map((duration) => (
+                <button
+                  key={duration.key}
+                  type="button"
+                  onClick={() => handleBoostClick(pkg, duration)}
+                  className="tile-interactive group flex w-full items-center justify-between gap-3 p-3 text-left"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">
+                      {duration.label}
+                    </span>
+                    <span className="tabular block text-xs text-muted-foreground">
+                      {currencyFormatter.format(duration.price)}
+                    </span>
+                  </span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand transition-transform duration-200 group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-2 flex items-center">
-        <Rocket className="mr-3" />
-        Speed on Demand
-      </h1>
-      <p className="text-muted-foreground mb-6">
-        Upgrade your speed temporarily to handle heavy tasks.
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        icon={Rocket}
+        eyebrow="Layanan Tambahan"
+        title="Speed on Demand"
+        description="Tingkatkan kecepatan sementara saat Anda butuh performa ekstra."
+      />
 
       {requestAwaitingProof && (
         <PaymentProofCard
@@ -271,20 +246,45 @@ export default function SpeedBoostView({
         />
       )}
 
-      {renderBoostSection()}
+      <Card>
+        <CardContent className="pt-5">
+          <div className="brand-panel flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="eyebrow text-brand">Paket Aktif Anda</p>
+              <p className="mt-1 truncate text-lg font-bold">
+                {currentCustomerInfo.packageName}
+              </p>
+            </div>
+            <p className="tabular shrink-0 text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {currencyFormatter.format(currentCustomerInfo.monthlyBill)}
+              </span>{" "}
+              / bulan
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <section className="space-y-3">
+        <SectionHeading
+          title="Boost yang Tersedia"
+          description="Pilih kecepatan dan durasinya. Pembayaran dikonfirmasi oleh admin."
+        />
+        {renderBoostSection()}
+      </section>
 
       <Dialog open={isConfirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Speed Boost</DialogTitle>
+            <DialogTitle>Konfirmasi Speed Boost</DialogTitle>
             {selectedBoost && (
               <DialogDescription>
-                You are about to activate a boost to{" "}
-                <b className="text-primary">
+                Anda akan mengaktifkan boost ke{" "}
+                <b className="text-brand">
                   {selectedBoost.targetPackage.profile}
                 </b>{" "}
-                for {selectedBoost.durationLabel} at a cost of{" "}
-                <b className="text-primary">
+                selama {selectedBoost.durationLabel} dengan biaya{" "}
+                <b className="tabular text-brand">
                   {currencyFormatter.format(selectedBoost.price)}
                 </b>
                 .
@@ -293,7 +293,7 @@ export default function SpeedBoostView({
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-              Cancel
+              Batal
             </Button>
             <Button
               onClick={() => {
@@ -302,11 +302,11 @@ export default function SpeedBoostView({
               disabled={isLoading}
             >
               {isLoading ? (
-                <LoaderCircle className="animate-spin mr-2" />
+                <LoaderCircle className="animate-spin" />
               ) : (
-                <Check className="mr-2" />
+                <Check />
               )}
-              Confirm & Activate
+              Konfirmasi &amp; Aktifkan
             </Button>
           </DialogFooter>
         </DialogContent>

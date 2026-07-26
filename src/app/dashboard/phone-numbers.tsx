@@ -235,44 +235,67 @@ export default function PhoneNumbersManagement() {
     );
   }
 
+  const quotaUsed = Math.min(
+    100,
+    Math.round((data.current_count / Math.max(1, data.max_allowed)) * 100),
+  );
+
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <span className="icon-chip">
-            <Phone className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2.5">
+          <span className="icon-chip h-9 w-9">
+            <Phone className="h-[18px] w-[18px]" />
           </span>
           Nomor HP Terdaftar
         </CardTitle>
         <CardDescription>
-          Anda memiliki {data.current_count} dari {data.max_allowed} nomor HP
-          yang diizinkan.
+          Nomor ini dipakai untuk notifikasi dan kode OTP saat masuk.
         </CardDescription>
+        {/* Quota as a bar, not just a sentence: the customer can see at a glance
+            whether there is room for another number before tapping Add. */}
+        <div className="pt-2">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Kuota nomor</span>
+            <span className="tabular font-semibold">
+              {data.current_count} / {data.max_allowed}
+            </span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-brand-gradient transition-[width] duration-500"
+              style={{ width: `${quotaUsed}%` }}
+            />
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
+      <CardContent className="flex flex-1 flex-col gap-4">
+        <div>
           {data.phone_numbers.length > 0 ? (
-            <ul className="space-y-2">
+            <ul className="divide-y divide-border/70 overflow-hidden rounded-xl border">
               {data.phone_numbers.map((phone, index) => (
                 <li
                   key={index}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between gap-2 bg-card p-3 transition-colors hover:bg-muted/40"
                 >
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-mono">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                    </span>
+                    <span className="tabular truncate font-medium">
                       {formatPhoneDisplay(phone)}
                     </span>
                   </div>
                   {data.current_count > 1 && (
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon-sm"
                       onClick={() => {
                         void handleDeletePhoneNumber(phone);
                       }}
                       disabled={deletingPhone === phone}
-                      className="text-destructive hover:text-destructive"
+                      aria-label={`Hapus nomor ${formatPhoneDisplay(phone)}`}
+                      className="shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
                       {deletingPhone === phone ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -296,8 +319,8 @@ export default function PhoneNumbersManagement() {
         {data.current_count < data.max_allowed && (
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button variant="outline" className="mt-auto w-full">
+                <Plus />
                 Tambah Nomor HP
               </Button>
             </DialogTrigger>
@@ -314,41 +337,32 @@ export default function PhoneNumbersManagement() {
                     atau +628xxxxxxxxx
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone-number">Nomor HP</Label>
-                    <Input
-                      id="phone-number"
-                      type="tel"
-                      placeholder="081234567890"
-                      value={newPhoneNumber}
-                      onChange={(e) => setNewPhoneNumber(e.target.value)}
-                      required
-                      disabled={isAdding}
-                    />
-                  </div>
+                <div className="space-y-2 py-4">
+                  <Label htmlFor="phone-number">Nomor HP</Label>
+                  <Input
+                    id="phone-number"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="081234567890"
+                    value={newPhoneNumber}
+                    onChange={(e) => setNewPhoneNumber(e.target.value)}
+                    required
+                    disabled={isAdding}
+                  />
                 </div>
                 <DialogFooter>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => setIsAddDialogOpen(false)}
                     disabled={isAdding}
                   >
                     Batal
                   </Button>
                   <Button type="submit" disabled={isAdding}>
-                    {isAdding ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Menambahkan...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Tambah
-                      </>
-                    )}
+                    {isAdding ? <Loader2 className="animate-spin" /> : <Plus />}
+                    {isAdding ? "Menambahkan..." : "Tambah"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -357,10 +371,11 @@ export default function PhoneNumbersManagement() {
         )}
 
         {data.current_count >= data.max_allowed && (
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-auto flex items-start gap-2.5 rounded-lg bg-muted/50 p-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="text-sm leading-relaxed text-muted-foreground">
               Anda sudah mencapai batas maksimal {data.max_allowed} nomor HP.
+              Hapus salah satu nomor untuk menambahkan yang baru.
             </p>
           </div>
         )}

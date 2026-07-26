@@ -84,58 +84,85 @@ export default function Form({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSsid, ssid]);
 
+  const targetCount = syncedSsids.length > 0 ? syncedSsids.length : 1;
+
   return (
     <form
-      className="space-y-6"
+      className="space-y-5"
       onSubmit={(e) => {
         void handleSubmit(e);
       }}
     >
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="ssid">Nama WiFi (SSID)</Label>
           <div className="relative">
-            <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Type className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
             <Input
               id="ssid"
               type="text"
               value={form.ssid}
               onChange={(e) => setForm({ ...form, ssid: e.target.value })}
-              className="pl-10"
+              className="pl-11"
               required
+              maxLength={32}
+              autoComplete="off"
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Nama yang muncul saat perangkat mencari jaringan. Maksimal 32
+            karakter.
+          </p>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="password">Kata Sandi Baru (opsional)</Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="Kosongkan jika tidak diubah"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="pl-10 pr-10"
+              className="pl-11 pr-12"
+              autoComplete="new-password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label={
+                showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"
+              }
+              className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Minimal 8 karakter. Semua perangkat harus tersambung ulang setelah
+            kata sandi diubah.
+          </p>
         </div>
       </div>
-      <div className="flex w-full justify-end">
-        <Button type="submit" disabled={loading}>
-          {loading ? (
-            <Loader2 size={16} className="mr-2 animate-spin" />
-          ) : (
-            <Save size={16} className="mr-2" />
-          )}
-          Simpan
+
+      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Says out loud how many networks the Save button is about to touch —
+            the "Samakan Semua" switch above is easy to flip and forget. */}
+        <p className="text-xs text-muted-foreground">
+          Perubahan diterapkan ke{" "}
+          <span className="font-semibold text-foreground">
+            {targetCount} jaringan
+          </span>{" "}
+          dan langsung dikirim ke router Anda.
+        </p>
+        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+          {loading ? <Loader2 className="animate-spin" /> : <Save />}
+          Simpan Perubahan
         </Button>
       </div>
     </form>

@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatDateTime } from "@/lib/format";
 import { useReportDialog } from "./report-dialog-context";
 import { useSpeedOnDemand } from "./speed-on-demand-context";
 
@@ -18,12 +19,12 @@ export default function StatusView({ status }: { status: DashboardStatus }) {
   const { isEnabled: isSpeedOnDemandEnabled } = useSpeedOnDemand();
 
   return (
-    <div className="space-y-5">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1">
       {/* Active Speed Boost - Only show if Speed On Demand is enabled */}
       {isSpeedOnDemandEnabled && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2.5 text-[15px]">
               <span className="icon-chip h-8 w-8">
                 <Zap className="h-4 w-4" />
               </span>
@@ -32,17 +33,16 @@ export default function StatusView({ status }: { status: DashboardStatus }) {
           </CardHeader>
           <CardContent>
             {status.activeBoost ? (
-              <div className="rounded-xl border border-brand/20 bg-brand/10 p-3">
-                <p className="text-sm">
+              <div className="brand-panel p-3.5">
+                <p className="text-sm leading-relaxed">
                   Kecepatan Anda sedang ditingkatkan ke{" "}
                   <span className="font-bold text-brand">
                     {status.activeBoost.profile}
                   </span>
                   .
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Berakhir:{" "}
-                  {new Date(status.activeBoost.expiresAt).toLocaleString()}
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Berakhir: {formatDateTime(status.activeBoost.expiresAt)}
                 </p>
               </div>
             ) : (
@@ -57,45 +57,45 @@ export default function StatusView({ status }: { status: DashboardStatus }) {
       {/* Active Report */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <span className="icon-chip h-8 w-8">
-                <Hourglass className="h-4 w-4" />
-              </span>
-              Laporan Aktif
-            </CardTitle>
-            {!status.activeReport && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openDialog}
-                className="h-8 w-full text-xs sm:w-auto"
-              >
-                <MessageSquareWarning size={14} className="mr-1.5" />
-                Laporkan Masalah
-              </Button>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2.5 text-[15px]">
+            <span className="icon-chip h-8 w-8">
+              <Hourglass className="h-4 w-4" />
+            </span>
+            Laporan Aktif
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {status.activeReport ? (
-            <div className="rounded-xl border border-warning/30 bg-warning/10 p-3">
+            <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
               <p className="break-words text-sm">
                 Laporan{" "}
-                <span className="font-bold">#{status.activeReport.id}</span>{" "}
+                <span className="tabular font-bold">
+                  #{status.activeReport.id}
+                </span>{" "}
                 <span className="text-muted-foreground">
                   ({status.activeReport.category})
                 </span>
               </p>
-              <Badge className="mt-2 border-transparent bg-warning/15 text-warning hover:bg-warning/15">
+              <Badge variant="warning" className="mt-2">
                 {status.activeReport.status}
               </Badge>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-success" />
-              Tidak ada laporan aktif.
-            </div>
+            <>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                Tidak ada laporan aktif.
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openDialog}
+                className="w-full"
+              >
+                <MessageSquareWarning />
+                Laporkan Masalah
+              </Button>
+            </>
           )}
         </CardContent>
       </Card>

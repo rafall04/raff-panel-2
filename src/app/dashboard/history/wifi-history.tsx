@@ -7,6 +7,8 @@ import { Wifi, KeyRound, Radio, Type } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { Timeline, TimelineItem } from "@/components/ui/timeline";
+import { formatDateTime } from "@/lib/format";
 
 function iconFor(type: string): LucideIcon {
   const map: Record<string, LucideIcon> = {
@@ -65,34 +67,24 @@ export default function WifiHistory() {
   }
 
   return (
-    <div className="space-y-3">
-      {items.map((it) => {
-        const Icon = iconFor(it.type);
-        return (
-          <div key={it.id} className="tile flex items-start gap-3">
-            <span className="icon-chip mt-0.5 h-10 w-10">
-              <Icon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">{it.description}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span>
-                  {new Date(it.timestamp).toLocaleString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-                <Badge variant="secondary" className="font-normal">
-                  {it.sourceLabel}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <Timeline>
+      {items.map((it, index) => (
+        <TimelineItem
+          key={it.id}
+          icon={iconFor(it.type)}
+          tone="brand"
+          isLast={index === items.length - 1}
+          title={it.description}
+          meta={
+            <>
+              <span>{formatDateTime(it.timestamp)}</span>
+              <Badge variant="secondary" className="font-normal">
+                {it.sourceLabel}
+              </Badge>
+            </>
+          }
+        />
+      ))}
+    </Timeline>
   );
 }

@@ -13,38 +13,31 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Timeline, TimelineItem } from "@/components/ui/timeline";
+import { formatDate } from "@/lib/format";
 import BillingHistory from "./billing-history";
 import WifiHistory from "./wifi-history";
 import PackageChangeHistory from "../package-change-history";
+
+type BadgeVariant = React.ComponentProps<typeof Badge>["variant"];
+
+const REPORT_STATUS: Record<string, { label: string; variant: BadgeVariant }> =
+  {
+    Completed: { label: "Selesai", variant: "success" },
+    "In Progress": { label: "Diproses", variant: "brand" },
+    Cancelled: { label: "Dibatalkan", variant: "danger" },
+  };
 
 const ReportStatusBadge = ({
   status,
 }: {
   status: ReportHistoryItem["status"];
 }) => {
-  const map: Record<string, { label: string; className: string }> = {
-    Completed: {
-      label: "Selesai",
-      className: "bg-success/15 text-success",
-    },
-    "In Progress": {
-      label: "Diproses",
-      className: "bg-brand/15 text-brand",
-    },
-    Cancelled: {
-      label: "Dibatalkan",
-      className: "bg-destructive/15 text-destructive",
-    },
-  };
-  const entry = map[status] ?? {
+  const entry = REPORT_STATUS[status] ?? {
     label: status,
-    className: "bg-muted text-muted-foreground",
+    variant: "secondary" as const,
   };
-  return (
-    <Badge className={`border-transparent ${entry.className}`}>
-      {entry.label}
-    </Badge>
-  );
+  return <Badge variant={entry.variant}>{entry.label}</Badge>;
 };
 
 function ReportsList({ history }: { history: ReportHistoryItem[] }) {
@@ -57,34 +50,27 @@ function ReportsList({ history }: { history: ReportHistoryItem[] }) {
       />
     );
   }
+
   return (
-    <div className="space-y-3">
-      {history.map((item) => (
-        <div
+    <Timeline>
+      {history.map((item, index) => (
+        <TimelineItem
           key={item.id}
-          className="tile flex items-start justify-between gap-3"
-        >
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="icon-chip mt-0.5 h-10 w-10">
-              <MessageSquareWarning className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="font-semibold">{item.category}</p>
-              <p className="text-xs text-muted-foreground">
-                Dilaporkan{" "}
-                {new Date(item.submittedAt).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}{" "}
-                • #{item.id}
-              </p>
-            </div>
-          </div>
-          <ReportStatusBadge status={item.status} />
-        </div>
+          icon={MessageSquareWarning}
+          tone={item.status === "Completed" ? "success" : "warning"}
+          isLast={index === history.length - 1}
+          title={item.category}
+          meta={
+            <>
+              <span>Dilaporkan {formatDate(item.submittedAt)}</span>
+              <span aria-hidden="true">•</span>
+              <span className="tabular">#{item.id}</span>
+            </>
+          }
+          trailing={<ReportStatusBadge status={item.status} />}
+        />
       ))}
-    </div>
+    </Timeline>
   );
 }
 
@@ -94,36 +80,39 @@ export default function HistoryView({
   reports: ReportHistoryItem[];
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         icon={History}
+        eyebrow="Aktivitas"
         title="Riwayat"
         description="Semua aktivitas akun Anda dalam satu tempat."
       />
 
       <Tabs defaultValue="tagihan" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tagihan" className="px-1.5 text-xs">
-            <Receipt className="mr-1 h-3.5 w-3.5" />
+        {/* Scrollable rather than a rigid 4-column grid: at 375px the old grid
+            squeezed each label to about five legible characters. */}
+        <TabsList className="w-full">
+          <TabsTrigger value="tagihan">
+            <Receipt />
             Tagihan
           </TabsTrigger>
-          <TabsTrigger value="laporan" className="px-1.5 text-xs">
-            <MessageSquareWarning className="mr-1 h-3.5 w-3.5" />
+          <TabsTrigger value="laporan">
+            <MessageSquareWarning />
             Laporan
           </TabsTrigger>
-          <TabsTrigger value="wifi" className="px-1.5 text-xs">
-            <Wifi className="mr-1 h-3.5 w-3.5" />
+          <TabsTrigger value="wifi">
+            <Wifi />
             WiFi
           </TabsTrigger>
-          <TabsTrigger value="paket" className="px-1.5 text-xs">
-            <PackageCheck className="mr-1 h-3.5 w-3.5" />
+          <TabsTrigger value="paket">
+            <PackageCheck />
             Paket
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="tagihan">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-5">
               <BillingHistory />
             </CardContent>
           </Card>
@@ -131,7 +120,7 @@ export default function HistoryView({
 
         <TabsContent value="laporan">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-5">
               <ReportsList history={reports} />
             </CardContent>
           </Card>
@@ -139,7 +128,7 @@ export default function HistoryView({
 
         <TabsContent value="wifi">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-5">
               <WifiHistory />
             </CardContent>
           </Card>

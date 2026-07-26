@@ -1,8 +1,8 @@
 "use client";
 
-import { Activity, ArrowDown, ArrowUp, Router, WifiOff } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, RefreshCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -10,6 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatusPill } from "@/components/ui/status";
+import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/format";
 import { useCustomerTrafficLive } from "@/hooks/use-customer-traffic-live";
 
 interface CustomerTrafficLiveCardProps {
@@ -22,7 +25,77 @@ function formatRelativeSample(value: string | null) {
   if (!value) {
     return "Belum ada sample";
   }
-  return new Date(value).toLocaleString();
+  return formatDateTime(value);
+}
+
+/**
+ * One throughput reading. The figure is split from its unit so the number can
+ * carry the weight while "Mbps" stays quiet — and so a three-digit rate does
+ * not visually outrank a one-digit one.
+ */
+function RateTile({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  tone: "brand" | "success";
+}) {
+  const [figure, ...unit] = value.split(" ");
+
+  return (
+    <div className="tile flex flex-col gap-2">
+      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+        <span
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-md",
+            tone === "brand"
+              ? "bg-brand/12 text-brand"
+              : "bg-success/12 text-success",
+          )}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        {label}
+      </p>
+      <p className="tabular flex items-baseline gap-1.5 leading-none">
+        <span
+          className={cn(
+            "text-2xl font-bold tracking-tight sm:text-[28px]",
+            tone === "brand" ? "text-brand" : "text-success",
+          )}
+        >
+          {figure}
+        </span>
+        <span className="text-sm font-medium text-muted-foreground">
+          {unit.join(" ")}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function Notice({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon?: LucideIcon;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+      {Icon ? <Icon className="mt-0.5 h-4 w-4 shrink-0" /> : null}
+      <div>
+        {title ? <p className="font-medium text-foreground">{title}</p> : null}
+        <p>{children}</p>
+      </div>
+    </div>
+  );
 }
 
 export default function CustomerTrafficLiveCard({
@@ -44,93 +117,96 @@ export default function CustomerTrafficLiveCard({
     ? "Snapshot ringan dari trafik interface PPPoE aktif."
     : "Rate download dan upload dihitung dari dua snapshot interface PPPoE terbaru.";
 
+  const isLive = Boolean(data?.online && !data.stale && !data.warmup);
+
   return (
     <Card className="border-border/70">
-      <CardHeader className="space-y-3">
+      <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="icon-chip h-9 w-9">
+                <Activity className="h-[18px] w-[18px]" />
+              </span>
               {title}
             </CardTitle>
-            <CardDescription>{description}</CardDescription>
+            <CardDescription className="mt-1.5">{description}</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {data?.online ? (
-              <Badge variant={data.stale ? "outline" : "default"}>
+              <StatusPill
+                tone={data.stale || data.warmup ? "pending" : "online"}
+                // The pulse is the signal that the figures are still moving —
+                // it runs only while the feed is genuinely live.
+                pulse={isLive}
+              >
                 {data.warmup
-                  ? "Menyiapkan sample"
+                  ? "Menyiapkan"
                   : data.stale
                     ? "Data terakhir"
                     : "Live"}
-              </Badge>
+              </StatusPill>
             ) : (
-              <Badge variant="outline">Offline</Badge>
+              <StatusPill tone="offline">Offline</StatusPill>
             )}
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="icon-sm"
               onClick={() => {
                 void refetch();
               }}
               disabled={loading}
+              aria-label="Muat ulang bandwidth"
             >
-              Refresh
+              <RefreshCw className={cn(loading && "animate-spin")} />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+
+      <CardContent className="space-y-3">
         {error && !data ? (
-          <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-            {error}
-          </div>
+          <Notice>{error}</Notice>
         ) : data && !data.hasPppoe ? (
-          <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+          <Notice>
             Akun ini belum memiliki layanan PPPoE yang bisa dimonitor.
-          </div>
+          </Notice>
         ) : data && !data.online ? (
-          <div className="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-            <WifiOff className="h-4 w-4 shrink-0" />
-            <div>
-              <p className="font-medium text-foreground">Sedang offline</p>
-              <p>Bandwidth live akan tampil otomatis saat sesi PPPoE aktif.</p>
-            </div>
-          </div>
+          <Notice icon={WifiOff} title="Sedang offline">
+            Bandwidth live akan tampil otomatis saat sesi PPPoE aktif.
+          </Notice>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl border p-4">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                <ArrowDown className="h-3.5 w-3.5" />
-                Download
-              </p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight">
-                {data?.downloadHuman || "0 bps"}
-              </p>
+          <>
+            <div className="grid grid-cols-1 gap-3 xs:grid-cols-2">
+              <RateTile
+                icon={ArrowDown}
+                label="Download"
+                value={data?.downloadHuman || "0 bps"}
+                tone="brand"
+              />
+              <RateTile
+                icon={ArrowUp}
+                label="Upload"
+                value={data?.uploadHuman || "0 bps"}
+                tone="success"
+              />
             </div>
-            <div className="rounded-2xl border p-4">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                <ArrowUp className="h-3.5 w-3.5" />
-                Upload
-              </p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight">
-                {data?.uploadHuman || "0 bps"}
-              </p>
-            </div>
-            <div className="rounded-2xl border p-4 sm:col-span-2 xl:col-span-1">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                <Router className="h-3.5 w-3.5" />
-                Interface
-              </p>
-              <p className="mt-3 truncate text-base font-medium text-foreground">
-                {data?.interfaceName || "Tidak tersedia"}
-              </p>
-              <p className="mt-2 text-xs text-muted-foreground">
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span className="truncate">
+                Interface:{" "}
+                <span className="font-medium text-foreground">
+                  {data?.interfaceName || "Tidak tersedia"}
+                </span>
+              </span>
+              <span aria-hidden="true" className="hidden sm:inline">
+                •
+              </span>
+              <span>
                 Sample: {formatRelativeSample(data?.lastSampleAt || null)}
-              </p>
-            </div>
-          </div>
+              </span>
+            </p>
+          </>
         )}
 
         {data?.stale && data.lastSampleAt && (

@@ -3,7 +3,9 @@ import {
   getCustomerTrafficUsageStatus,
 } from "../actions";
 import TrafficView from "./view";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Activity, EyeOff } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,14 +18,18 @@ export default async function TrafficPage() {
 
   if (!usageEnabled) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pemakaian Traffic</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Fitur pemakaian traffic belum diaktifkan oleh admin.
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <PageHeader
+          icon={Activity}
+          eyebrow="Pemakaian"
+          title="Pemakaian Traffic"
+        />
+        <EmptyState
+          icon={EyeOff}
+          title="Fitur belum diaktifkan"
+          description="Pemantauan pemakaian data belum diaktifkan oleh admin untuk akun Anda."
+        />
+      </div>
     );
   }
 

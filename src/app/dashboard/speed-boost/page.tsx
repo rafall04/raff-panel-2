@@ -1,7 +1,8 @@
 import { getCustomerInfo, getSpeedRequestAwaitingProof } from "../actions";
 import SpeedBoostView from "./view";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { AlertTriangle, Rocket } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,15 +17,17 @@ export default async function SpeedBoostPage() {
   // We need customer info to filter packages, so it's a critical dependency
   if (!customerInfo) {
     return (
-      <div className="w-full flex items-center justify-center p-4">
-        <Alert variant="destructive" className="max-w-lg">
-          <Terminal className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Could not retrieve your customer information. Please try again
-            later.
-          </AlertDescription>
-        </Alert>
+      <div className="space-y-6">
+        <PageHeader
+          icon={Rocket}
+          eyebrow="Layanan Tambahan"
+          title="Speed on Demand"
+        />
+        <EmptyState
+          icon={AlertTriangle}
+          title="Gagal memuat data akun"
+          description="Kami tidak bisa mengambil informasi langganan Anda saat ini. Silakan coba lagi beberapa saat lagi."
+        />
       </div>
     );
   }

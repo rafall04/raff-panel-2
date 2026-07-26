@@ -8,7 +8,6 @@ import {
   updateCredentials,
 } from "../actions";
 import type { CustomerInfo } from "../actions";
-import type { LucideIcon } from "lucide-react";
 import {
   Settings,
   LogOut,
@@ -28,7 +27,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import PhoneNumbersManagement from "../phone-numbers";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader, SectionHeading } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,6 +39,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InfoRow } from "@/components/ui/info-row";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -49,14 +50,9 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { currencyFormatter } from "@/lib/format";
 import { useReportDialog } from "../report-dialog-context";
 import { toast } from "sonner";
-
-const currencyFormatter = new Intl.NumberFormat("id-ID", {
-  style: "currency",
-  currency: "IDR",
-  minimumFractionDigits: 0,
-});
 
 interface MonthlyPackage {
   id: number | string;
@@ -72,30 +68,6 @@ function ensureOk(result: { status?: number; message?: string }) {
     throw new Error(result.message || "Terjadi kesalahan.");
   }
   return result;
-}
-
-function ProfileRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <div className="break-words text-sm font-medium">{value || "—"}</div>
-      </div>
-    </div>
-  );
 }
 
 export default function SettingsView({
@@ -261,372 +233,421 @@ export default function SettingsView({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <PageHeader
         icon={Settings}
+        eyebrow="Akun"
         title="Pengaturan"
         description="Kelola profil, akun, langganan, dan perangkat Anda."
       />
 
-      {/* Profile (read-only) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <User className="h-5 w-5" />
-            </span>
-            Profil
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ProfileRow
-            icon={User}
-            label="Nama"
-            value={currentCustomerInfo.name}
-          />
-          <ProfileRow
-            icon={AtSign}
-            label="Nama Pengguna"
-            value={currentCustomerInfo.username}
-          />
-          <ProfileRow
-            icon={Phone}
-            label="Nomor HP Utama"
-            value={currentCustomerInfo.phone_number}
-          />
-          <ProfileRow
-            icon={MapPin}
-            label="Alamat"
-            value={currentCustomerInfo.address}
-          />
-          <div className="flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
-            <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            Untuk mengubah nama atau alamat, hubungi admin lewat WhatsApp atau
-            kirim laporan.
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Subscription */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <PackageCheck className="h-5 w-5" />
-            </span>
-            Langganan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-xl border border-brand/20 bg-brand/10 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-              Paket Aktif
-            </p>
-            <p className="mt-1 text-lg font-bold">{currentPackageName}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {monthlyBill}
-              </span>{" "}
-              / bulan
-            </p>
-          </div>
-
-          <Dialog open={isPackageListOpen} onOpenChange={setPackageListOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full">
-                <PackageCheck size={16} className="mr-2" /> Ubah Paket
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>Ubah Paket Langganan</DialogTitle>
-                <DialogDescription>
-                  Pilih paket baru. Perubahan akan ditinjau oleh admin.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                {availablePackages.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {availablePackages.map((pkg) => (
-                      <Card key={pkg.id} className="flex flex-col">
-                        <CardHeader>
-                          <CardTitle className="text-base">
-                            {pkg.name}
-                          </CardTitle>
-                          {pkg.profile && (
-                            <CardDescription className="text-sm">
-                              🚀 {pkg.profile}
-                            </CardDescription>
-                          )}
-                          <CardDescription className="font-semibold text-brand">
-                            {currencyFormatter.format(pkg.price)} / bulan
-                          </CardDescription>
-                          {pkg.description && (
-                            <CardDescription className="mt-2 text-xs">
-                              {pkg.description}
-                            </CardDescription>
-                          )}
-                        </CardHeader>
-                        <CardFooter className="mt-auto">
-                          <Button
-                            onClick={() => handleSelectPackage(pkg)}
-                            size="sm"
-                            className="group w-full"
-                          >
-                            Ajukan Perubahan{" "}
-                            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="py-4 text-center text-muted-foreground">
-                    Tidak ada paket lain yang tersedia saat ini.
-                  </p>
-                )}
+      {/* ── Profil & langganan ─────────────────────────────────────────────
+          Titles here pass a plain "&", not "&amp;": JSX decodes entities in
+          element children but never inside a string-literal attribute, so the
+          escaped form would render verbatim. */}
+      <section className="space-y-3">
+        <SectionHeading
+          title="Profil & Langganan"
+          description="Data akun Anda seperti yang tercatat di sistem kami."
+        />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2.5">
+                <span className="icon-chip h-9 w-9">
+                  <User className="h-[18px] w-[18px]" />
+                </span>
+                Profil
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3.5">
+              <InfoRow
+                icon={User}
+                label="Nama"
+                value={currentCustomerInfo.name}
+              />
+              <InfoRow
+                icon={AtSign}
+                label="Nama Pengguna"
+                value={currentCustomerInfo.username}
+              />
+              <InfoRow
+                icon={Phone}
+                label="Nomor HP Utama"
+                value={currentCustomerInfo.phone_number}
+              />
+              <InfoRow
+                icon={MapPin}
+                label="Alamat"
+                value={currentCustomerInfo.address}
+              />
+              <div className="flex items-start gap-2.5 rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                Untuk mengubah nama atau alamat, hubungi admin lewat WhatsApp
+                atau kirim laporan.
               </div>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Account: username + password as SEPARATE forms */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <KeyRound className="h-5 w-5" />
-            </span>
-            Akun
-          </CardTitle>
-          <CardDescription>
-            Ubah nama pengguna dan kata sandi secara terpisah. Setiap perubahan
-            butuh kata sandi Anda saat ini.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="tile flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <AtSign className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Nama Pengguna
-              </p>
-              <p className="truncate font-semibold">
-                {currentCustomerInfo.username || "—"}
-              </p>
-            </div>
-          </div>
-
-          {/* Change username (dialog) */}
-          <Dialog
-            open={isUsernameDialogOpen}
-            onOpenChange={setUsernameDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                <span className="flex items-center gap-2">
-                  <AtSign className="h-4 w-4" /> Ubah Nama Pengguna
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2.5">
+                <span className="icon-chip h-9 w-9">
+                  <PackageCheck className="h-[18px] w-[18px]" />
                 </span>
-                <ChevronRight className="h-4 w-4 opacity-60" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Ubah Nama Pengguna</DialogTitle>
-                <DialogDescription>
-                  Butuh kata sandi Anda saat ini untuk verifikasi.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleUpdateUsername} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username-current-pw">
-                    Kata Sandi Saat Ini
-                  </Label>
-                  <Input
-                    id="username-current-pw"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Masukkan kata sandi Anda saat ini"
-                    value={usernameCurrentPw}
-                    onChange={(e) => setUsernameCurrentPw(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-username">Nama Pengguna Baru</Label>
-                  <Input
-                    id="new-username"
-                    type="text"
-                    autoComplete="username"
-                    placeholder="Nama pengguna baru"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={usernameLoading}>
-                    {usernameLoading ? (
-                      <LoaderCircle className="mr-2 animate-spin" />
-                    ) : (
-                      <Check className="mr-2" />
-                    )}
-                    Simpan
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                Langganan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-1 flex-col gap-4">
+              <div className="brand-panel">
+                <p className="eyebrow text-brand">Paket Aktif</p>
+                <p className="mt-1 text-lg font-bold leading-tight">
+                  {currentPackageName}
+                </p>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  <span className="tabular font-semibold text-foreground">
+                    {monthlyBill}
+                  </span>{" "}
+                  / bulan
+                </p>
+              </div>
 
-          {/* Change password (dialog) */}
-          <Dialog
-            open={isPasswordDialogOpen}
-            onOpenChange={setPasswordDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                <span className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4" /> Ubah Kata Sandi
+              <Dialog
+                open={isPackageListOpen}
+                onOpenChange={setPackageListOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="mt-auto w-full">
+                    <PackageCheck />
+                    Ubah Paket
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Ubah Paket Langganan</DialogTitle>
+                    <DialogDescription>
+                      Pilih paket baru. Perubahan akan ditinjau oleh admin.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-1">
+                    {availablePackages.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {availablePackages.map((pkg) => (
+                          <Card key={pkg.id} className="flex flex-col">
+                            <CardHeader className="gap-1.5 pb-3">
+                              <CardTitle className="text-base">
+                                {pkg.name}
+                              </CardTitle>
+                              {pkg.profile && (
+                                <CardDescription className="flex items-center gap-1.5 text-xs">
+                                  <ArrowRight className="h-3.5 w-3.5 text-brand" />
+                                  {pkg.profile}
+                                </CardDescription>
+                              )}
+                              <p className="tabular text-sm font-bold text-brand">
+                                {currencyFormatter.format(pkg.price)}
+                                <span className="font-normal text-muted-foreground">
+                                  {" "}
+                                  / bulan
+                                </span>
+                              </p>
+                              {pkg.description && (
+                                <CardDescription className="text-xs">
+                                  {pkg.description}
+                                </CardDescription>
+                              )}
+                            </CardHeader>
+                            <CardFooter className="mt-auto">
+                              <Button
+                                onClick={() => handleSelectPackage(pkg)}
+                                size="sm"
+                                className="group w-full"
+                              >
+                                Ajukan Perubahan
+                                <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        icon={PackageCheck}
+                        title="Tidak ada paket lain"
+                        description="Saat ini belum ada paket alternatif yang bisa diajukan."
+                      />
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* ── Keamanan ──────────────────────────────────────────────────────── */}
+      <section className="space-y-3">
+        <SectionHeading
+          title="Keamanan Akun"
+          description="Setiap perubahan memerlukan kata sandi Anda saat ini."
+        />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2.5">
+                <span className="icon-chip h-9 w-9">
+                  <KeyRound className="h-[18px] w-[18px]" />
                 </span>
-                <ChevronRight className="h-4 w-4 opacity-60" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Ubah Kata Sandi</DialogTitle>
-                <DialogDescription>
-                  Butuh kata sandi Anda saat ini untuk verifikasi.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleUpdatePassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password-current-pw">
-                    Kata Sandi Saat Ini
-                  </Label>
-                  <Input
-                    id="password-current-pw"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Masukkan kata sandi Anda saat ini"
-                    value={passwordCurrentPw}
-                    onChange={(e) => setPasswordCurrentPw(e.target.value)}
-                  />
+                Kredensial
+              </CardTitle>
+              <CardDescription>
+                Ubah nama pengguna dan kata sandi secara terpisah.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="tile flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground">
+                  <AtSign className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="eyebrow">Nama Pengguna</p>
+                  <p className="truncate font-semibold">
+                    {currentCustomerInfo.username || "—"}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">Kata Sandi Baru</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Kata sandi baru"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">
-                    Konfirmasi Kata Sandi
-                  </Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Ulangi kata sandi baru"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={passwordLoading}>
-                    {passwordLoading ? (
-                      <LoaderCircle className="mr-2 animate-spin" />
-                    ) : (
-                      <Check className="mr-2" />
-                    )}
-                    Simpan
+              </div>
+
+              {/* Change username (dialog) */}
+              <Dialog
+                open={isUsernameDialogOpen}
+                onOpenChange={setUsernameDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      <AtSign />
+                      Ubah Nama Pengguna
+                    </span>
+                    <ChevronRight className="opacity-60" />
                   </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Ubah Nama Pengguna</DialogTitle>
+                    <DialogDescription>
+                      Butuh kata sandi Anda saat ini untuk verifikasi.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleUpdateUsername} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username-current-pw">
+                        Kata Sandi Saat Ini
+                      </Label>
+                      <Input
+                        id="username-current-pw"
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="Masukkan kata sandi Anda saat ini"
+                        value={usernameCurrentPw}
+                        onChange={(e) => setUsernameCurrentPw(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-username">Nama Pengguna Baru</Label>
+                      <Input
+                        id="new-username"
+                        type="text"
+                        autoComplete="username"
+                        placeholder="Nama pengguna baru"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={usernameLoading}>
+                        {usernameLoading ? (
+                          <LoaderCircle className="animate-spin" />
+                        ) : (
+                          <Check />
+                        )}
+                        Simpan
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
 
-      {/* Phone numbers */}
-      <PhoneNumbersManagement />
+              {/* Change password (dialog) */}
+              <Dialog
+                open={isPasswordDialogOpen}
+                onOpenChange={setPasswordDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      <KeyRound />
+                      Ubah Kata Sandi
+                    </span>
+                    <ChevronRight className="opacity-60" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Ubah Kata Sandi</DialogTitle>
+                    <DialogDescription>
+                      Butuh kata sandi Anda saat ini untuk verifikasi.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password-current-pw">
+                        Kata Sandi Saat Ini
+                      </Label>
+                      <Input
+                        id="password-current-pw"
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="Masukkan kata sandi Anda saat ini"
+                        value={passwordCurrentPw}
+                        onChange={(e) => setPasswordCurrentPw(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">Kata Sandi Baru</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder="Kata sandi baru"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">
+                        Konfirmasi Kata Sandi
+                      </Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder="Ulangi kata sandi baru"
+                        value={confirmNewPassword}
+                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={passwordLoading}>
+                        {passwordLoading ? (
+                          <LoaderCircle className="animate-spin" />
+                        ) : (
+                          <Check />
+                        )}
+                        Simpan
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
 
-      {/* Device & account actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <Wrench className="h-5 w-5" />
-            </span>
-            Tindakan Perangkat &amp; Akun
-          </CardTitle>
-          <CardDescription>
-            Lakukan tindakan pada akun atau perangkat Anda.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          <Button
-            variant="outline"
-            onClick={openReportDialog}
-            className="w-full justify-start"
-          >
-            <MessageSquareWarning size={16} className="mr-2" /> Laporkan Masalah
-          </Button>
-          <Dialog open={isRebootDialogOpen} onOpenChange={setRebootDialogOpen}>
-            <DialogTrigger asChild>
+          <PhoneNumbersManagement />
+        </div>
+      </section>
+
+      {/* ── Device & account actions ──────────────────────────────────────── */}
+      <section className="space-y-3">
+        <SectionHeading
+          title="Perangkat & Sesi"
+          description="Tindakan pada router Anda dan sesi login di perangkat ini."
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="icon-chip h-9 w-9">
+                <Wrench className="h-[18px] w-[18px]" />
+              </span>
+              Tindakan
+            </CardTitle>
+            <CardDescription>
+              Reboot memutus koneksi sementara untuk semua perangkat di rumah
+              Anda.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <Button
                 variant="outline"
-                className="w-full justify-start border-amber-500/40 text-amber-500 hover:bg-amber-500/10 hover:text-amber-600"
+                onClick={openReportDialog}
+                className="w-full justify-start"
               >
-                <Power size={16} className="mr-2" /> Reboot Router
+                <MessageSquareWarning />
+                Laporkan Masalah
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Apakah Anda yakin?</DialogTitle>
-                <DialogDescription>
-                  Router akan dimulai ulang. Ini mungkin memakan waktu beberapa
-                  menit.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="ghost"
-                  onClick={() => setRebootDialogOpen(false)}
-                >
-                  Batal
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    void handleReboot();
-                  }}
-                  disabled={isLoadingReboot}
-                >
-                  {isLoadingReboot ? (
-                    <LoaderCircle className="mr-2 animate-spin" />
-                  ) : (
-                    <Check className="mr-2" />
-                  )}
-                  Konfirmasi Reboot
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full justify-start border-red-500/40 text-red-500 hover:bg-red-500/10 hover:text-red-600 sm:col-span-2"
-          >
-            <LogOut size={16} className="mr-2" /> Keluar
-          </Button>
-        </CardContent>
-      </Card>
+              <Dialog
+                open={isRebootDialogOpen}
+                onOpenChange={setRebootDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start border-warning/40 text-warning hover:border-warning/60 hover:bg-warning/10 hover:text-warning"
+                  >
+                    <Power />
+                    Reboot Router
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Reboot router sekarang?</DialogTitle>
+                    <DialogDescription>
+                      Router akan dimulai ulang dan koneksi terputus selama
+                      beberapa menit. Semua perangkat akan tersambung kembali
+                      secara otomatis.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setRebootDialogOpen(false)}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        void handleReboot();
+                      }}
+                      disabled={isLoadingReboot}
+                    >
+                      {isLoadingReboot ? (
+                        <LoaderCircle className="animate-spin" />
+                      ) : (
+                        <Check />
+                      )}
+                      Konfirmasi Reboot
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Sign-out sits below a rule, apart from the routine actions —
+                separating it is what stops a mis-tap from ending the session. */}
+            <div className="border-t pt-3">
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full justify-start border-destructive/40 text-destructive hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <LogOut />
+                Keluar dari Akun
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Package change confirmation */}
       <Dialog open={isPackageConfirmOpen} onOpenChange={setPackageConfirmOpen}>
@@ -648,7 +669,7 @@ export default function SettingsView({
                 )}
                 <span className="mt-1 block">
                   Harga baru:{" "}
-                  <strong>
+                  <strong className="tabular">
                     {currencyFormatter.format(selectedPackage.price)} / bulan
                   </strong>
                 </span>
@@ -672,9 +693,9 @@ export default function SettingsView({
               disabled={isChangeLoading}
             >
               {isChangeLoading ? (
-                <LoaderCircle className="mr-2 animate-spin" />
+                <LoaderCircle className="animate-spin" />
               ) : (
-                <Check className="mr-2" />
+                <Check />
               )}
               Konfirmasi Permintaan
             </Button>

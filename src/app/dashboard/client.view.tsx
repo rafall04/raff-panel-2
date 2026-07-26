@@ -25,13 +25,17 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardBand,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
+import { StatusPill } from "@/components/ui/status";
+import { SectionHeading } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
+import { formatBytes, formatDateTime } from "@/lib/format";
 import { toast } from "sonner";
 import AssociatedDevicesTable from "./associated-devices-table";
 import AnnouncementDisplay from "./announcement-display";
@@ -39,6 +43,28 @@ import NewsDisplay from "./news-display";
 import QuickActions from "./quick-actions";
 import { useSpeedOnDemand } from "./speed-on-demand-context";
 import CustomerTrafficLiveCard from "@/components/customer-traffic-live-card";
+
+/** Down/up pair under a traffic figure. */
+function TrafficSplit({
+  download,
+  upload,
+}: {
+  download: number;
+  upload: number;
+}) {
+  return (
+    <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5">
+        <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
+        <span className="tabular">{formatBytes(download)}</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <ArrowUpFromLine className="h-3.5 w-3.5 text-success" />
+        <span className="tabular">{formatBytes(upload)}</span>
+      </span>
+    </div>
+  );
+}
 
 export default function View({
   ssidInfo: initialSsidInfo,
@@ -116,62 +142,48 @@ export default function View({
   const isOnline =
     new Date(ssidInfo.lastInform).getTime() > new Date().getTime() - 86700000;
   const allDevices = ssidInfo.ssid.flatMap((s) => s.associatedDevices);
-  const formatBytes = (value: number) => {
-    if (!Number.isFinite(value) || value <= 0) {
-      return "0 B";
-    }
-    const units = ["B", "KB", "MB", "GB", "TB"];
-    let size = value;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex += 1;
-    }
-    return `${size.toFixed(size >= 100 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-  };
+  const planName =
+    customerInfo?.package || customerInfo?.packageName || "Paket Anda";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 lg:space-y-8">
       <AnnouncementDisplay />
 
-      {/* Hero: greeting + live connection status + key stats */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      {/* ── Hero: who you are, whether you are online, and the headline stats ── */}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Card className="overflow-hidden lg:col-span-2">
-          <div className="relative border-b bg-gradient-to-br from-brand/10 via-transparent to-transparent p-5">
-            <div className="flex items-start justify-between gap-3">
+          <div className="relative overflow-hidden border-b bg-gradient-to-br from-brand/12 via-brand/[0.04] to-transparent p-5 sm:p-6">
+            {/* Decorative corner light. Pure gradient, no blur filter — the
+                same look at a fraction of the paint cost on weak devices. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-60"
+              style={{
+                backgroundImage:
+                  "radial-gradient(closest-side, hsl(var(--brand) / 0.22), transparent)",
+              }}
+            />
+            <div className="relative flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">{greeting},</p>
-                <p className="truncate text-xl font-bold">
+                <p className="mt-0.5 truncate text-xl font-bold leading-tight sm:text-2xl">
                   {customerInfo?.name || "Pelanggan"}
                 </p>
+                <p className="mt-2 flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
+                  Layanan
+                  <span className="font-semibold text-foreground">
+                    {planName}
+                  </span>
+                  {isOnline ? "berjalan normal." : "sedang tidak terhubung."}
+                </p>
               </div>
-              <span
-                className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
-                  isOnline
-                    ? "bg-success/15 text-success"
-                    : "bg-destructive/15 text-destructive",
-                )}
-              >
-                <span
-                  className={cn(
-                    "h-2 w-2 rounded-full",
-                    isOnline
-                      ? "bg-success animate-glow-green"
-                      : "bg-destructive animate-glow-red",
-                  )}
-                />
+              <StatusPill tone={isOnline ? "online" : "offline"} pulse>
                 {isOnline ? "Online" : "Offline"}
-              </span>
+              </StatusPill>
             </div>
           </div>
 
-          <CardContent
-            className={cn(
-              "grid grid-cols-2 gap-3 p-4",
-              isSpeedOnDemandEnabled ? "sm:grid-cols-3" : "sm:grid-cols-3",
-            )}
-          >
+          <CardContent className="grid grid-cols-2 gap-3 pt-4 sm:grid-cols-3 sm:pt-5">
             <StatTile
               icon={Clock}
               label="Uptime"
@@ -189,7 +201,9 @@ export default function View({
                 icon={Rocket}
                 label="Boost"
                 value={dashboardStatus.activeBoost?.profile || "—"}
+                hint={dashboardStatus.activeBoost ? "aktif" : "tidak aktif"}
                 accent={dashboardStatus.activeBoost ? "brand" : "default"}
+                className="col-span-2 sm:col-span-1"
               />
             ) : (
               <StatTile
@@ -197,11 +211,12 @@ export default function View({
                 label="Jaringan"
                 value={isOnline ? "Aktif" : "Terputus"}
                 accent={isOnline ? "success" : "destructive"}
+                className="col-span-2 sm:col-span-1"
               />
             )}
           </CardContent>
 
-          <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
+          <CardBand className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
               Diperbarui otomatis tiap 5 menit
             </p>
@@ -213,52 +228,55 @@ export default function View({
               }}
               disabled={loading}
             >
-              <RefreshCw
-                size={14}
-                className={cn("mr-2", loading && "animate-spin")}
-              />
+              <RefreshCw className={cn(loading && "animate-spin")} />
               Segarkan
             </Button>
-          </div>
+          </CardBand>
         </Card>
 
         <CustomerView customerInfo={customerInfo} />
-      </div>
+      </section>
 
-      <QuickActions />
+      {/* ── Shortcuts ─────────────────────────────────────────────────────── */}
+      <section className="space-y-3">
+        <SectionHeading
+          title="Aksi Cepat"
+          description="Yang paling sering dibuka pelanggan."
+        />
+        <QuickActions />
+      </section>
 
-      {/* Devices + service status */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <span className="icon-chip">
-                  <MonitorSmartphone className="h-5 w-5" />
-                </span>
-                Perangkat Terhubung
-              </CardTitle>
-              <CardDescription>
-                Daftar perangkat yang sedang terhubung ke jaringan Anda.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AssociatedDevicesTable devices={allDevices} />
-            </CardContent>
-          </Card>
-        </div>
+      {/* ── Devices + service status ──────────────────────────────────────── */}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="icon-chip h-9 w-9">
+                <MonitorSmartphone className="h-[18px] w-[18px]" />
+              </span>
+              Perangkat Terhubung
+            </CardTitle>
+            <CardDescription>
+              Daftar perangkat yang sedang terhubung ke jaringan Anda.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AssociatedDevicesTable devices={allDevices} />
+          </CardContent>
+        </Card>
+
         <div className="lg:col-span-1">
           <StatusView status={dashboardStatus} />
         </div>
-      </div>
+      </section>
 
-      {/* Traffic usage */}
+      {/* ── Traffic usage ─────────────────────────────────────────────────── */}
       {trafficUsageEnabled && trafficUsage && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <span className="icon-chip">
-                <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2.5">
+              <span className="icon-chip h-9 w-9">
+                <Activity className="h-[18px] w-[18px]" />
               </span>
               Pemakaian Traffic
             </CardTitle>
@@ -277,46 +295,29 @@ export default function View({
                 />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="tile">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Hari Ini
-                    </p>
-                    <p className="mt-2 text-2xl font-bold">
+                    <p className="eyebrow">Hari Ini</p>
+                    <p className="tabular mt-2 text-2xl font-bold">
                       {formatBytes(trafficUsage.today.totalBytes)}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
-                        {formatBytes(trafficUsage.today.downloadBytes)}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <ArrowUpFromLine className="h-3.5 w-3.5 text-success" />
-                        {formatBytes(trafficUsage.today.uploadBytes)}
-                      </span>
-                    </div>
+                    <TrafficSplit
+                      download={trafficUsage.today.downloadBytes}
+                      upload={trafficUsage.today.uploadBytes}
+                    />
                   </div>
                   <div className="tile">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Bulan Ini
-                    </p>
-                    <p className="mt-2 text-2xl font-bold">
+                    <p className="eyebrow">Bulan Ini</p>
+                    <p className="tabular mt-2 text-2xl font-bold">
                       {formatBytes(trafficUsage.currentMonth.totalBytes)}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <ArrowDownToLine className="h-3.5 w-3.5 text-brand" />
-                        {formatBytes(trafficUsage.currentMonth.downloadBytes)}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <ArrowUpFromLine className="h-3.5 w-3.5 text-success" />
-                        {formatBytes(trafficUsage.currentMonth.uploadBytes)}
-                      </span>
-                    </div>
+                    <TrafficSplit
+                      download={trafficUsage.currentMonth.downloadBytes}
+                      upload={trafficUsage.currentMonth.uploadBytes}
+                    />
                   </div>
                   {trafficUsage.lastCollectedAt && (
                     <p className="text-xs text-muted-foreground sm:col-span-2">
                       {trafficUsage.stale ? "Data terakhir" : "Update terakhir"}
-                      :{" "}
-                      {new Date(trafficUsage.lastCollectedAt).toLocaleString()}
+                      : {formatDateTime(trafficUsage.lastCollectedAt)}
                     </p>
                   )}
                 </div>
@@ -330,12 +331,12 @@ export default function View({
         </Card>
       )}
 
-      {/* News & promos */}
+      {/* ── News & promos ─────────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <span className="icon-chip">
-              <Newspaper className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2.5">
+            <span className="icon-chip h-9 w-9">
+              <Newspaper className="h-[18px] w-[18px]" />
             </span>
             Berita &amp; Promo
           </CardTitle>

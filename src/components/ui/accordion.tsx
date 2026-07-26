@@ -14,7 +14,7 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
-    className={cn("border-b", className)}
+    className={cn("border-b last:border-b-0", className)}
     {...props}
   />
 ));
@@ -28,13 +28,18 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
+        // No hover:underline — it fights the icon+text layout callers use and
+        // reads as a link rather than a disclosure. The chevron chip is the
+        // affordance instead.
+        "group flex flex-1 items-center justify-between gap-3 py-4 text-left font-medium transition-colors hover:text-brand data-[state=open]:text-brand",
         className,
       )}
       {...props}
     >
       {children}
-      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all duration-200 group-hover:bg-brand/12 group-hover:text-brand group-data-[state=open]:rotate-180 group-data-[state=open]:bg-brand/12 group-data-[state=open]:text-brand">
+        <ChevronDown className="h-4 w-4" />
+      </span>
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 ));

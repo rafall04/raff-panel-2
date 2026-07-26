@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Rocket,
   Settings,
+  Ticket,
   Wifi,
 } from "lucide-react";
 
@@ -39,9 +40,12 @@ export interface NavGroup {
 export function getNavGroups({
   speedBoostEnabled,
   trafficEnabled,
+  voucherEnabled = false,
 }: {
   speedBoostEnabled: boolean;
   trafficEnabled: boolean;
+  /** `customerVoucher.enabled` di backend — default OFF, jadi menu sembunyi kecuali dinyalakan. */
+  voucherEnabled?: boolean;
 }): NavGroup[] {
   return [
     {
@@ -73,6 +77,17 @@ export function getNavGroups({
               },
             ]
           : []),
+        ...(voucherEnabled
+          ? [
+              {
+                href: "/dashboard/vouchers",
+                label: "Voucher",
+                icon: Ticket,
+                description: "Beli voucher hotspot dengan QRIS",
+                mobilePriority: 4,
+              },
+            ]
+          : []),
         ...(trafficEnabled
           ? [
               {
@@ -81,7 +96,7 @@ export function getNavGroups({
                 shortLabel: "Traffic",
                 icon: Activity,
                 description: "Pemakaian data harian dan bulanan",
-                mobilePriority: 5,
+                mobilePriority: 6,
               },
             ]
           : []),
@@ -95,14 +110,14 @@ export function getNavGroups({
           label: "Riwayat",
           icon: History,
           description: "Tagihan, laporan, Wi-Fi, dan perubahan paket",
-          mobilePriority: 4,
+          mobilePriority: 5,
         },
         {
           href: "/dashboard/knowledge-base",
           label: "Bantuan",
           icon: HelpCircle,
           description: "Pertanyaan umum dan kontak dukungan",
-          mobilePriority: 6,
+          mobilePriority: 7,
         },
         {
           href: "/dashboard/settings",
@@ -110,7 +125,7 @@ export function getNavGroups({
           shortLabel: "Akun",
           icon: Settings,
           description: "Profil, paket, kata sandi, dan perangkat",
-          mobilePriority: 7,
+          mobilePriority: 8,
         },
       ],
     },

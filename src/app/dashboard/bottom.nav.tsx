@@ -8,6 +8,7 @@ import { ChevronRight, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSpeedOnDemand } from "./speed-on-demand-context";
 import { useTrafficUsageStatus } from "@/hooks/use-traffic-usage-status";
+import { useVoucherStatus } from "@/hooks/use-voucher-status";
 import { getNavGroups, splitForBottomBar, type NavItem } from "./nav-items";
 
 function BarLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
@@ -48,10 +49,11 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { isEnabled: speedBoostEnabled } = useSpeedOnDemand();
   const { isEnabled: trafficEnabled } = useTrafficUsageStatus();
+  const { isEnabled: voucherEnabled } = useVoucherStatus();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const { primary, overflow } = splitForBottomBar(
-    getNavGroups({ speedBoostEnabled, trafficEnabled }),
+    getNavGroups({ speedBoostEnabled, trafficEnabled, voucherEnabled }),
   );
 
   // Navigating from inside the sheet must close it; the route changes under a

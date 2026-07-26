@@ -39,6 +39,12 @@ import {
   uploadPaymentProof as uploadPaymentProofImpl,
   getSpeedRequestAwaitingProof as getSpeedRequestAwaitingProofImpl,
 } from "./_server/payment-proof-actions";
+import {
+  getVoucherPageData as getVoucherPageDataImpl,
+  createVoucherPurchase as createVoucherPurchaseImpl,
+  getVoucherPurchaseStatus as getVoucherPurchaseStatusImpl,
+  getVoucherHistory as getVoucherHistoryImpl,
+} from "./_server/voucher-actions";
 import type { PaymentProofType } from "@/services/payment-proof.service";
 import { CustomerTrafficService } from "@/services/customer-traffic.service";
 import { updateCredentials as updateCredentialsImpl } from "@/utils/auth.server";
@@ -149,4 +155,20 @@ export async function updateCredentials(
   newPassword?: string,
 ) {
   return updateCredentialsImpl(currentPassword, newUsername, newPassword);
+}
+
+export async function getVoucherPageData() {
+  return getVoucherPageDataImpl();
+}
+
+export async function createVoucherPurchase(prof: string) {
+  return createVoucherPurchaseImpl(prof);
+}
+
+export async function getVoucherPurchaseStatus(reff: string) {
+  return getVoucherPurchaseStatusImpl(reff);
+}
+
+export async function getVoucherHistory() {
+  return getVoucherHistoryImpl();
 }

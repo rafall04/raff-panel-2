@@ -9,6 +9,7 @@ import { ModeToggle } from "./components/mode-toggle";
 import { useReportDialog } from "./report-dialog-context";
 import { useSpeedOnDemand } from "./speed-on-demand-context";
 import { useTrafficUsageStatus } from "@/hooks/use-traffic-usage-status";
+import { useVoucherStatus } from "@/hooks/use-voucher-status";
 import { getNavGroups } from "./nav-items";
 
 /**
@@ -24,8 +25,13 @@ export default function SidebarNav({ companyName }: { companyName: string }) {
   const { openDialog } = useReportDialog();
   const { isEnabled: speedBoostEnabled } = useSpeedOnDemand();
   const { isEnabled: trafficEnabled } = useTrafficUsageStatus();
+  const { isEnabled: voucherEnabled } = useVoucherStatus();
 
-  const groups = getNavGroups({ speedBoostEnabled, trafficEnabled });
+  const groups = getNavGroups({
+    speedBoostEnabled,
+    trafficEnabled,
+    voucherEnabled,
+  });
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-border/70 bg-card/70 lg:flex">

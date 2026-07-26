@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatBytes, formatDateTime } from "@/lib/format";
+import { formatBytes, formatDateTime, formatIsoDate } from "@/lib/format";
 import CustomerTrafficLiveCard from "@/components/customer-traffic-live-card";
 
 interface Period {
@@ -180,11 +180,14 @@ export default function TrafficView({
             <span className="icon-chip h-9 w-9">
               <Database className="h-[18px] w-[18px]" />
             </span>
-            Riwayat 30 Hari
+            Riwayat Harian
           </CardTitle>
           <CardDescription>
-            Panjang bar dihitung relatif terhadap hari dengan pemakaian
-            tertinggi.
+            {/* Riwayat terkumpul harian sejak pemantauan diaktifkan, jadi judul
+                "30 Hari" akan menjanjikan lebih dari yang ada selama bulan
+                pertama. Menyebut batasnya apa adanya lebih jujur. */}
+            Terkumpul sejak pemantauan diaktifkan, maksimal 30 hari terakhir.
+            Panjang bar relatif terhadap hari dengan pemakaian tertinggi.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -194,7 +197,7 @@ export default function TrafficView({
                 <li key={day.date} className="bg-card p-3.5">
                   <div className="flex items-center justify-between gap-3">
                     <span className="tabular text-sm font-medium">
-                      {day.date}
+                      {formatIsoDate(day.date)}
                     </span>
                     <span className="tabular text-sm font-semibold">
                       {formatBytes(day.totalBytes)}

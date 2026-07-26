@@ -43,6 +43,43 @@ export function formatDate(value: string | number | Date): string {
   });
 }
 
+const MONTH_ID = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+] as const;
+
+/**
+ * "26 Jul 2026" from a bare `YYYY-MM-DD` string, without going through `Date`.
+ *
+ * The backend sends calendar dates (daily traffic buckets) with no time or zone.
+ * `new Date("2026-07-26")` parses as UTC midnight, so a viewer in a negative
+ * offset renders the *previous* day — the row would disagree with the figure
+ * next to it. Parsing the parts literally keeps a calendar date a calendar date.
+ * Falls back to the raw input if the shape is unexpected.
+ */
+export function formatIsoDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return value;
+  }
+  const [, year, month, day] = match;
+  const monthLabel = MONTH_ID[Number(month) - 1];
+  if (!monthLabel) {
+    return value;
+  }
+  return `${Number(day)} ${monthLabel} ${year}`;
+}
+
 /** "12 Mar 2025, 14.05" — for "last updated" style stamps. */
 export function formatDateTime(value: string | number | Date): string {
   return new Date(value).toLocaleString("id-ID", {

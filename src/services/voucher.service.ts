@@ -36,6 +36,10 @@ export interface VoucherPurchase {
   paid: boolean;
   prof: string | null;
   amount: number;
+  /** Harga voucher tanpa biaya admin — angka NYATA dari record transaksi. */
+  subtotal: number;
+  /** Biaya admin QRIS yang benar-benar ditagihkan iPaymu (bukan estimasi). */
+  fee: number;
   total: number | null;
   /** Hanya terisi saat `state === "pending"`; backend menyembunyikannya setelah lunas. */
   qrString: string | null;
@@ -57,6 +61,17 @@ export interface VoucherCheckout {
 
 export interface VoucherFeatureStatus {
   enabled: boolean;
+  /**
+   * Tarif biaya admin QRIS iPaymu (mis. 0.007 = 0,7%), untuk ESTIMASI di layar konfirmasi
+   * sebelum transaksi dibuat. Angka pasti datang dari `fee` pada transaksi. Datang dari
+   * backend supaya tidak ada konstanta kembar di repo ini.
+   *
+   * Opsional DENGAN SENGAJA: panel dan backend di-deploy terpisah, jadi panel versi baru
+   * bisa berjalan sebentar di atas backend yang belum mengirim field ini.
+   */
+  qrisFeeRate?: number;
+  /** Nomor utama yang akan menerima kode voucher, sudah dinormalkan backend. */
+  notifyPhone?: string | null;
 }
 
 export class VoucherService {

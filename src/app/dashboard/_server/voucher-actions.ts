@@ -11,6 +11,10 @@ import { logPortalServerEvent } from "@/lib/server-log";
 export interface VoucherPageData {
   /** False bila operator belum menyalakan `customerVoucher.enabled` di backend. */
   enabled: boolean;
+  /** Tarif biaya admin QRIS untuk estimasi di layar konfirmasi. */
+  qrisFeeRate: number;
+  /** Nomor tujuan kode voucher, ditentukan backend dari sesi. */
+  notifyPhone: string | null;
   packages: VoucherPackage[];
   history: VoucherPurchase[];
 }
@@ -24,7 +28,15 @@ export interface VoucherPageData {
  * menghasilkan 503 yang pasti.
  */
 export async function getVoucherPageData(): Promise<VoucherPageData> {
-  const empty: VoucherPageData = { enabled: false, packages: [], history: [] };
+  const empty: VoucherPageData = {
+    enabled: false,
+    // 0,7% — nilai jaga-jaga yang hanya terpakai bila halaman entah bagaimana dirender
+    // tanpa status; jalur normal selalu memakai angka dari backend.
+    qrisFeeRate: 0.007,
+    notifyPhone: null,
+    packages: [],
+    history: [],
+  };
 
   try {
     const { VoucherService } = await import("@/services/voucher.service");
@@ -51,7 +63,24 @@ export async function getVoucherPageData(): Promise<VoucherPageData> {
         ? (historyResult.value.data ?? [])
         : [];
 
-    return { enabled: true, packages, history };
+    // Tarif harus berupa angka positif yang masuk akal. Backend lama tidak mengirimnya sama
+    // sekali, dan backend yang salah konfigurasi bisa mengirim 0 — keduanya akan membuat
+    // layar konfirmasi menampilkan "Biaya admin Rp0", angka yang salah dan menyesatkan.
+    const rate = status.data.qrisFeeRate;
+    const qrisFeeRate =
+      typeof rate === "number" && Number.isFinite(rate) && rate > 0
+        ? rate
+        : empty.qrisFeeRate;
+
+    const phone = status.data.notifyPhone;
+
+    return {
+      enabled: true,
+      qrisFeeRate,
+      notifyPhone: typeof phone === "string" && phone ? phone : null,
+      packages,
+      history,
+    };
   } catch (error) {
     logPortalServerEvent("error", "voucher_page_data_error", {
       domain: "voucher",

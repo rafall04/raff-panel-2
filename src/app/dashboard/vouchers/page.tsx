@@ -29,5 +29,12 @@ export default async function VouchersPage() {
     );
   }
 
-  return <VoucherView packages={data.packages} initialHistory={data.history} />;
+  return (
+    <VoucherView
+      packages={data.packages}
+      initialHistory={data.history}
+      qrisFeeRate={data.qrisFeeRate}
+      notifyPhone={data.notifyPhone}
+    />
+  );
 }

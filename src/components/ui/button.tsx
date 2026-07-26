@@ -36,7 +36,13 @@ const buttonVariants = cva(
         sm: "h-10 rounded-md px-3.5 text-[13px]",
         lg: "h-12 rounded-xl px-8 text-base",
         icon: "h-11 w-11",
-        "icon-sm": "h-9 w-9",
+        // 36px visual so it still fits a list row or card footer, but the
+        // `after` pseudo pushes the *hit* area to 44px — the iOS/Material
+        // minimum — without enlarging the border box or the hover fill.
+        // Every caller sits in a container with >=6px padding, so the 4px
+        // bleed is never clipped by an `overflow-hidden` ancestor.
+        "icon-sm":
+          "relative h-9 w-9 after:absolute after:-inset-1 after:content-['']",
       },
     },
     defaultVariants: {

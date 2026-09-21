@@ -161,8 +161,8 @@ export async function getVoucherPageData() {
   return getVoucherPageDataImpl();
 }
 
-export async function createVoucherPurchase(prof: string) {
-  return createVoucherPurchaseImpl(prof);
+export async function createVoucherPurchase(prof: string, qty?: number) {
+  return createVoucherPurchaseImpl(prof, qty);
 }
 
 export async function getVoucherPurchaseStatus(reff: string) {

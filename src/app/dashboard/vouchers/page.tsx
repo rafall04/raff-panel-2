@@ -35,6 +35,7 @@ export default async function VouchersPage() {
       initialHistory={data.history}
       qrisFeeRate={data.qrisFeeRate}
       notifyPhone={data.notifyPhone}
+      multiBuy={data.multiBuy}
     />
   );
 }

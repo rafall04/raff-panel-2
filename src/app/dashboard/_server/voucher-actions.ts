@@ -15,6 +15,11 @@ export interface VoucherPageData {
   qrisFeeRate: number;
   /** Nomor tujuan kode voucher, ditentukan backend dari sesi. */
   notifyPhone: string | null;
+  /**
+   * Gate multi-voucher dari backend (`voucherMultiPurchase`). Default OFF — stepper
+   * jumlah hanya tampil saat enabled, supaya UI tidak menjanjikan yang ditolak backend.
+   */
+  multiBuy: { enabled: boolean; maxQty: number };
   packages: VoucherPackage[];
   history: VoucherPurchase[];
 }
@@ -34,6 +39,7 @@ export async function getVoucherPageData(): Promise<VoucherPageData> {
     // tanpa status; jalur normal selalu memakai angka dari backend.
     qrisFeeRate: 0.007,
     notifyPhone: null,
+    multiBuy: { enabled: false, maxQty: 1 },
     packages: [],
     history: [],
   };
@@ -74,10 +80,22 @@ export async function getVoucherPageData(): Promise<VoucherPageData> {
 
     const phone = status.data.notifyPhone;
 
+    // Field opsional — backend lama tidak mengirimnya. maxQty < 1 dinormalkan ke 1
+    // supaya stepper tak pernah menampilkan batas yang mustahil.
+    const rawMulti = status.data.multiBuy;
+    const multiBuy =
+      rawMulti && rawMulti.enabled === true
+        ? {
+            enabled: true,
+            maxQty: Math.max(1, Math.floor(rawMulti.maxQty) || 1),
+          }
+        : empty.multiBuy;
+
     return {
       enabled: true,
       qrisFeeRate,
       notifyPhone: typeof phone === "string" && phone ? phone : null,
+      multiBuy,
       packages,
       history,
     };
@@ -97,22 +115,27 @@ export interface CreateVoucherPurchaseResult {
 }
 
 /**
- * Buat transaksi QRIS untuk satu paket.
+ * Buat transaksi QRIS untuk `qty` voucher dari satu paket.
  *
- * Hanya `prof` yang dikirim — nomor HP ditentukan backend dari sesi. Tidak ada
+ * Hanya `prof` + `qty` yang dikirim — nomor HP ditentukan backend dari sesi. Tidak ada
  * `revalidatePath` di sini: transaksi baru belum mengubah apa pun yang ter-render
  * di server, dan panel langsung berpindah ke tampilan QRIS di klien.
+ * `qty` divalidasi ulang di backend (gate `voucherMultiPurchase` + batas maksimal).
  */
 export async function createVoucherPurchase(
   prof: string,
+  qty = 1,
 ): Promise<CreateVoucherPurchaseResult> {
   if (!prof || typeof prof !== "string") {
     return { success: false, message: "Paket voucher tidak valid." };
   }
+  if (!Number.isInteger(qty) || qty < 1) {
+    return { success: false, message: "Jumlah voucher tidak valid." };
+  }
 
   try {
     const { VoucherService } = await import("@/services/voucher.service");
-    const response = await VoucherService.createPurchase(prof);
+    const response = await VoucherService.createPurchase(prof, qty);
 
     if (!response.success || !response.data) {
       return {

@@ -44,6 +44,15 @@ export interface VoucherPurchase {
   /** Hanya terisi saat `state === "pending"`; backend menyembunyikannya setelah lunas. */
   qrString: string | null;
   voucherCode: string | null;
+  /**
+   * Jumlah voucher dalam transaksi ini (pembelian multi-voucher, gate backend
+   * `voucherMultiPurchase`). Opsional: backend lama tidak mengirimnya — anggap 1.
+   */
+  qty?: number;
+  /** Semua kode batch. `voucherCode` di atas tetap ada sebagai gabungan string. */
+  voucherCodes?: string[];
+  /** Lunas tapi kode yang terbit kurang dari qty — sisanya diproses admin. */
+  partial?: boolean;
   createdAt: number | null;
   expiredAt: number | null;
 }
@@ -52,6 +61,10 @@ export interface VoucherCheckout {
   reff: string;
   prof: string;
   packageName: string;
+  /** Jumlah voucher dalam batch ini; backend lama tidak mengirimnya — anggap 1. */
+  qty?: number;
+  /** Harga satuan voucher; `amount` adalah unitPrice × qty. */
+  unitPrice?: number;
   amount: number;
   total: number;
   fee: number;
@@ -72,6 +85,12 @@ export interface VoucherFeatureStatus {
   qrisFeeRate?: number;
   /** Nomor utama yang akan menerima kode voucher, sudah dinormalkan backend. */
   notifyPhone?: string | null;
+  /**
+   * Gate pembelian multi-voucher (backend `config.voucherMultiPurchase`, di-toggle dari
+   * /config tab Voucher). Opsional: backend lama tidak mengirimnya — anggap OFF dan
+   * jangan tampilkan stepper jumlah sama sekali.
+   */
+  multiBuy?: { enabled: boolean; maxQty: number };
 }
 
 export class VoucherService {
@@ -100,18 +119,20 @@ export class VoucherService {
   }
 
   /**
-   * Buat transaksi QRIS untuk satu paket.
+   * Buat transaksi QRIS untuk `qty` voucher dari satu paket (SATU transaksi per batch).
    * Endpoint: POST /api/customer/vouchers/purchase
    *
-   * Body hanya `{ prof }` — nomor HP sengaja tidak dikirim (lihat catatan di atas).
+   * Body `{ prof, qty }` — nomor HP sengaja tidak dikirim (lihat catatan di atas).
+   * `qty > 1` hanya lolos bila backend mengaktifkan `voucherMultiPurchase`.
    * Dibatasi 10 transaksi / 15 menit per pelanggan di backend.
    */
   static async createPurchase(
     prof: string,
+    qty = 1,
   ): Promise<ApiResponse<VoucherCheckout>> {
     return serverApiClient.post<VoucherCheckout>(
       "/api/customer/vouchers/purchase",
-      { prof },
+      { prof, qty },
     );
   }
 

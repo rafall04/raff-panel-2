@@ -11,6 +11,8 @@ import {
   Copy,
   Download,
   Loader2,
+  Minus,
+  Plus,
   Receipt,
   RefreshCw,
   Ticket,
@@ -58,6 +60,30 @@ const STATE_TONE: Record<VoucherPurchaseState, StatusTone> = {
   completed: "online",
   failed: "offline",
 };
+
+/** Daftar kode terurut — `voucherCodes` dari backend baru, fallback memecah `voucherCode` lama. */
+function codesOf(purchase: VoucherPurchase): string[] {
+  if (purchase.voucherCodes && purchase.voucherCodes.length > 0) {
+    return purchase.voucherCodes;
+  }
+  return (purchase.voucherCode ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function qtyOf(purchase: VoucherPurchase): number {
+  return purchase.qty && purchase.qty > 1 ? purchase.qty : 1;
+}
+
+async function copyAllCodes(codes: string[]) {
+  try {
+    await navigator.clipboard.writeText(codes.join("\n"));
+    toast.success(`${codes.length} kode voucher disalin`);
+  } catch {
+    toast.error("Gagal menyalin. Salin manual kode di layar.");
+  }
+}
 
 function StateBadge({ state }: { state: VoucherPurchaseState }) {
   return (
@@ -204,8 +230,15 @@ function Invoice({
         value={purchase.createdAt ? formatDateTime(purchase.createdAt) : "-"}
       />
       <CostRow label="Paket" value={packageName} />
+      {qtyOf(purchase) > 1 ? (
+        <CostRow label="Jumlah voucher" value={`${qtyOf(purchase)} pcs`} />
+      ) : null}
       <CostRow
-        label="Harga voucher"
+        label={
+          qtyOf(purchase) > 1
+            ? `Harga voucher ×${qtyOf(purchase)}`
+            : "Harga voucher"
+        }
         value={currencyFormatter.format(purchase.subtotal)}
       />
       <CostRow
@@ -253,11 +286,19 @@ function HowToUse() {
 }
 
 function HistoryRow({ row }: { row: VoucherPurchase }) {
+  const codes = codesOf(row);
   return (
     <li className="bg-card p-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium">{row.prof ?? "Voucher"}</p>
+          <p className="truncate font-medium">
+            {row.prof ?? "Voucher"}
+            {qtyOf(row) > 1 ? (
+              <span className="ml-1.5 text-muted-foreground">
+                ×{qtyOf(row)}
+              </span>
+            ) : null}
+          </p>
           <p className="tabular mt-0.5 text-sm text-muted-foreground">
             {currencyFormatter.format(row.total ?? row.amount)}
             {row.createdAt ? ` · ${formatDateTime(row.createdAt)}` : null}
@@ -265,10 +306,30 @@ function HistoryRow({ row }: { row: VoucherPurchase }) {
         </div>
         <StateBadge state={row.state} />
       </div>
-      {row.voucherCode ? (
-        <div className="mt-3">
-          <VoucherCode code={row.voucherCode} />
+      {codes.length > 0 ? (
+        <div className="mt-3 space-y-2">
+          {codes.map((code) => (
+            <VoucherCode key={code} code={code} />
+          ))}
+          {codes.length > 1 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => void copyAllCodes(codes)}
+            >
+              <Copy />
+              Salin semua ({codes.length})
+            </Button>
+          ) : null}
         </div>
+      ) : null}
+      {row.partial ? (
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Baru {codes.length} dari {qtyOf(row)} voucher yang terbit — sisanya
+          sedang diproses admin.
+        </p>
       ) : null}
       {row.state === "failed" ? (
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -286,15 +347,18 @@ export default function VoucherView({
   initialHistory,
   qrisFeeRate,
   notifyPhone,
+  multiBuy,
 }: {
   packages: VoucherPackage[];
   initialHistory: VoucherPurchase[];
   qrisFeeRate: number;
   notifyPhone: string | null;
+  multiBuy: { enabled: boolean; maxQty: number };
 }) {
   const [history, setHistory] = React.useState(initialHistory);
   const [step, setStep] = React.useState<Step>("catalog");
   const [selected, setSelected] = React.useState<VoucherPackage | null>(null);
+  const [qty, setQty] = React.useState(1);
   const [creating, setCreating] = React.useState(false);
   const [checking, setChecking] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
@@ -375,11 +439,20 @@ export default function VoucherView({
     };
   }, [activeReff, shouldPoll, applyPurchase]);
 
-  /** Estimasi biaya admin sebelum transaksi ada. `ceil` agar tak pernah kurang dari fee asli. */
-  const estimatedFee = selected ? Math.ceil(selected.price * qrisFeeRate) : 0;
+  /**
+   * Estimasi pra-transaksi, dihitung dari SUBTOTAL batch (harga × qty), bukan harga
+   * satuan — biaya admin menempel pada nilai yang ditagihkan. `ceil` agar tak pernah
+   * kurang dari fee asli.
+   */
+  const effectiveQty = multiBuy.enabled
+    ? Math.min(Math.max(1, qty), multiBuy.maxQty)
+    : 1;
+  const reviewSubtotal = selected ? selected.price * effectiveQty : 0;
+  const estimatedFee = Math.ceil(reviewSubtotal * qrisFeeRate);
 
   function pickPackage(item: VoucherPackage) {
     setSelected(item);
+    setQty(1);
     setStep("review");
   }
 
@@ -389,7 +462,7 @@ export default function VoucherView({
     }
     setCreating(true);
     try {
-      const result = await createVoucherPurchase(selected.prof);
+      const result = await createVoucherPurchase(selected.prof, effectiveQty);
       if (!result.success || !result.data) {
         toast.error(result.message);
         return;
@@ -399,12 +472,15 @@ export default function VoucherView({
         state: "pending",
         paid: false,
         prof: result.data.prof,
+        qty: result.data.qty ?? effectiveQty,
         amount: result.data.amount,
         subtotal: result.data.amount,
         fee: result.data.fee,
         total: result.data.total,
         qrString: result.data.qrString,
         voucherCode: null,
+        voucherCodes: [],
+        partial: false,
         createdAt: Date.now(),
         expiredAt: result.data.expiredAt,
       });
@@ -514,14 +590,64 @@ export default function VoucherView({
               </span>
             </div>
 
+            {/* Stepper hanya dirender saat backend membuka gate — tanpa itu pembelian
+                tetap 1 voucher dan pelanggan tidak melihat kontrol yang akan ditolak. */}
+            {multiBuy.enabled ? (
+              <div className="tile flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Jumlah voucher</p>
+                  <p className="text-xs text-muted-foreground">
+                    Maksimal {multiBuy.maxQty} per transaksi
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={effectiveQty <= 1}
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    aria-label="Kurangi jumlah voucher"
+                  >
+                    <Minus />
+                  </Button>
+                  <span className="tabular w-10 text-center text-lg font-bold">
+                    {effectiveQty}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={effectiveQty >= multiBuy.maxQty}
+                    onClick={() =>
+                      setQty((q) => Math.min(multiBuy.maxQty, q + 1))
+                    }
+                    aria-label="Tambah jumlah voucher"
+                  >
+                    <Plus />
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="tile space-y-0 divide-y divide-border/60">
               <CostRow
                 label="Kirim kode ke"
                 value={notifyPhone ?? "Nomor belum terdaftar"}
               />
+              {effectiveQty > 1 ? (
+                <CostRow
+                  label="Harga satuan"
+                  value={currencyFormatter.format(selected.price)}
+                />
+              ) : null}
               <CostRow
-                label="Harga voucher"
-                value={currencyFormatter.format(selected.price)}
+                label={
+                  effectiveQty > 1
+                    ? `Harga voucher ×${effectiveQty}`
+                    : "Harga voucher"
+                }
+                value={currencyFormatter.format(reviewSubtotal)}
               />
               <CostRow
                 label="Biaya admin QRIS"
@@ -529,7 +655,7 @@ export default function VoucherView({
               />
               <CostRow
                 label="Total bayar"
-                value={currencyFormatter.format(selected.price + estimatedFee)}
+                value={currencyFormatter.format(reviewSubtotal + estimatedFee)}
                 emphasis
               />
             </div>
@@ -617,8 +743,18 @@ export default function VoucherView({
                 </div>
 
                 <div className="tile space-y-0 divide-y divide-border/60">
+                  {qtyOf(active) > 1 ? (
+                    <CostRow
+                      label="Jumlah voucher"
+                      value={`${qtyOf(active)} pcs`}
+                    />
+                  ) : null}
                   <CostRow
-                    label="Harga voucher"
+                    label={
+                      qtyOf(active) > 1
+                        ? `Harga voucher ×${qtyOf(active)}`
+                        : "Harga voucher"
+                    }
                     value={currencyFormatter.format(active.subtotal)}
                   />
                   <CostRow
@@ -695,7 +831,8 @@ export default function VoucherView({
 
   // ── Langkah 4: hasil. Struk lengkap bila lunas, atau jalur bantuan admin. ────────
   if (step === "result" && active) {
-    const isDone = active.state === "completed" && active.voucherCode;
+    const codes = codesOf(active);
+    const isDone = active.state === "completed" && codes.length > 0;
     return (
       <div className="space-y-6">
         {header}
@@ -725,10 +862,39 @@ export default function VoucherView({
               </p>
             </div>
 
-            {isDone && active.voucherCode ? (
+            {isDone ? (
               <div className="space-y-2">
-                <p className="eyebrow">Kode voucher Anda</p>
-                <VoucherCode code={active.voucherCode} />
+                <div className="flex items-center justify-between gap-2">
+                  <p className="eyebrow">
+                    {codes.length > 1
+                      ? `Kode voucher Anda (${codes.length})`
+                      : "Kode voucher Anda"}
+                  </p>
+                  {codes.length > 1 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void copyAllCodes(codes)}
+                    >
+                      <Copy />
+                      Salin semua
+                    </Button>
+                  ) : null}
+                </div>
+                {codes.map((code) => (
+                  <VoucherCode key={code} code={code} />
+                ))}
+                {active.partial ? (
+                  <div className="flex gap-3 rounded-xl border border-warning/25 bg-warning/10 p-3.5">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                    <p className="text-sm leading-relaxed">
+                      Baru {codes.length} dari {qtyOf(active)} voucher yang
+                      terbit. Sisanya sedang diproses admin dan akan dikirim ke
+                      WhatsApp Anda — tidak perlu membeli ulang.
+                    </p>
+                  </div>
+                ) : null}
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Salinannya juga dikirim ke WhatsApp Anda
                   {notifyPhone ? ` (${notifyPhone})` : ""}. Simpan sebagai

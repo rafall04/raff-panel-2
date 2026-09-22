@@ -42,6 +42,7 @@ import {
 import {
   getVoucherPageData as getVoucherPageDataImpl,
   createVoucherPurchase as createVoucherPurchaseImpl,
+  checkVoucherUsername as checkVoucherUsernameImpl,
   getVoucherPurchaseStatus as getVoucherPurchaseStatusImpl,
   getVoucherHistory as getVoucherHistoryImpl,
 } from "./_server/voucher-actions";
@@ -161,8 +162,16 @@ export async function getVoucherPageData() {
   return getVoucherPageDataImpl();
 }
 
-export async function createVoucherPurchase(prof: string, qty?: number) {
-  return createVoucherPurchaseImpl(prof, qty);
+export async function createVoucherPurchase(
+  prof: string,
+  qty?: number,
+  custom?: { username: string; password?: string },
+) {
+  return createVoucherPurchaseImpl(prof, qty, custom);
+}
+
+export async function checkVoucherUsername(name: string) {
+  return checkVoucherUsernameImpl(name);
 }
 
 export async function getVoucherPurchaseStatus(reff: string) {

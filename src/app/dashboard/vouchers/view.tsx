@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import {
+  checkVoucherUsername,
   createVoucherPurchase,
   getVoucherHistory,
   getVoucherPurchaseStatus,
@@ -32,6 +33,7 @@ import type {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, SectionHeading } from "@/components/ui/page-header";
 import { StatusPill, type StatusTone } from "@/components/ui/status";
@@ -348,17 +350,26 @@ export default function VoucherView({
   qrisFeeRate,
   notifyPhone,
   multiBuy,
+  customCreds,
 }: {
   packages: VoucherPackage[];
   initialHistory: VoucherPurchase[];
   qrisFeeRate: number;
   notifyPhone: string | null;
   multiBuy: { enabled: boolean; maxQty: number };
+  customCreds: { enabled: boolean };
 }) {
   const [history, setHistory] = React.useState(initialHistory);
   const [step, setStep] = React.useState<Step>("catalog");
   const [selected, setSelected] = React.useState<VoucherPackage | null>(null);
   const [qty, setQty] = React.useState(1);
+  // Kredensial pilihan pembeli — hanya berlaku qty=1 dan saat gate backend ON.
+  const [customUser, setCustomUser] = React.useState("");
+  const [customPass, setCustomPass] = React.useState("");
+  const [cuserStatus, setCuserStatus] = React.useState<
+    "idle" | "checking" | "ok" | "taken" | "invalid" | "error"
+  >("idle");
+  const [cuserMsg, setCuserMsg] = React.useState("");
   const [creating, setCreating] = React.useState(false);
   const [checking, setChecking] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
@@ -450,9 +461,59 @@ export default function VoucherView({
   const reviewSubtotal = selected ? selected.price * effectiveQty : 0;
   const estimatedFee = Math.ceil(reviewSubtotal * qrisFeeRate);
 
+  // Username kustom: field terkunci saat qty>1 — satu username tak bisa dibagi banyak voucher.
+  const credsLocked = effectiveQty > 1;
+  const normalizedUser = customUser.trim().toLowerCase();
+
+  // Probe ketersediaan username (debounced). Jawaban sementara — validasi final tetap
+  // di backend saat createPurchase (lock per-username di sana).
+  React.useEffect(() => {
+    if (!customCreds.enabled || !normalizedUser || credsLocked) {
+      setCuserStatus("idle");
+      setCuserMsg("");
+      return;
+    }
+    if (!/^[a-z0-9_-]{3,16}$/.test(normalizedUser)) {
+      setCuserStatus("invalid");
+      setCuserMsg("Hanya huruf kecil/angka plus - dan _ (3-16 karakter).");
+      return;
+    }
+    setCuserStatus("checking");
+    setCuserMsg("Memeriksa ketersediaan…");
+    const run = { alive: true };
+    const timer = setTimeout(() => {
+      void (async () => {
+        const res = await checkVoucherUsername(normalizedUser);
+        if (!run.alive) {
+          return;
+        }
+        if (res.available) {
+          setCuserStatus("ok");
+          setCuserMsg(`Username "${res.username ?? normalizedUser}" tersedia.`);
+        } else if (res.status === 503 || !res.message) {
+          setCuserStatus("error");
+          setCuserMsg(
+            "Gagal memeriksa ketersediaan — sistem cek ulang saat pembayaran.",
+          );
+        } else {
+          setCuserStatus("taken");
+          setCuserMsg(res.message);
+        }
+      })();
+    }, 400);
+    return () => {
+      run.alive = false;
+      clearTimeout(timer);
+    };
+  }, [customCreds.enabled, normalizedUser, credsLocked]);
+
   function pickPackage(item: VoucherPackage) {
     setSelected(item);
     setQty(1);
+    setCustomUser("");
+    setCustomPass("");
+    setCuserStatus("idle");
+    setCuserMsg("");
     setStep("review");
   }
 
@@ -460,9 +521,38 @@ export default function VoucherView({
     if (!selected) {
       return;
     }
+    // Kredensial kustom bila diisi — backend menolak username yang sudah dipakai.
+    const wantsCustom =
+      customCreds.enabled && !credsLocked && normalizedUser !== "";
+    if (wantsCustom) {
+      if (cuserStatus === "checking") {
+        toast.error(
+          "Tunggu sebentar — sedang memeriksa ketersediaan username.",
+        );
+        return;
+      }
+      if (cuserStatus === "invalid" || cuserStatus === "taken") {
+        toast.error("Perbaiki username voucher dulu.");
+        return;
+      }
+      const pass = customPass.trim();
+      if (pass !== "" && !/^\S{3,64}$/.test(pass)) {
+        toast.error("Password voucher 3-64 karakter tanpa spasi.");
+        return;
+      }
+    }
     setCreating(true);
     try {
-      const result = await createVoucherPurchase(selected.prof, effectiveQty);
+      const result = await createVoucherPurchase(
+        selected.prof,
+        effectiveQty,
+        wantsCustom
+          ? {
+              username: normalizedUser,
+              password: customPass.trim() || undefined,
+            }
+          : undefined,
+      );
       if (!result.success || !result.data) {
         toast.error(result.message);
         return;
@@ -481,6 +571,8 @@ export default function VoucherView({
         voucherCode: null,
         voucherCodes: [],
         partial: false,
+        customUser: wantsCustom ? normalizedUser : null,
+        customPass: wantsCustom ? customPass.trim() || normalizedUser : null,
         createdAt: Date.now(),
         expiredAt: result.data.expiredAt,
       });
@@ -630,11 +722,79 @@ export default function VoucherView({
               </div>
             ) : null}
 
+            {/* Kredensial pilihan pembeli — hanya saat backend membuka gate, dan hanya
+                bermakna untuk 1 voucher (terkunci saat stepper menaikkan jumlah). */}
+            {customCreds.enabled ? (
+              <div
+                className={`tile space-y-3 ${credsLocked ? "opacity-60" : ""}`}
+              >
+                <div>
+                  <p className="text-sm font-medium">
+                    Username &amp; password sendiri{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (opsional)
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {credsLocked
+                      ? "Hanya untuk pembelian 1 voucher — turunkan jumlah ke 1 untuk memakainya."
+                      : "Kosongkan untuk voucher dengan kode acak."}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Input
+                    value={customUser}
+                    onChange={(e) => setCustomUser(e.target.value)}
+                    placeholder="Username voucher, cth: adi_net"
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={16}
+                    disabled={credsLocked}
+                  />
+                  {normalizedUser !== "" ? (
+                    <p
+                      className={`text-xs ${
+                        cuserStatus === "ok"
+                          ? "text-success"
+                          : cuserStatus === "error"
+                            ? "text-warning"
+                            : cuserStatus === "checking"
+                              ? "text-muted-foreground"
+                              : "text-destructive"
+                      }`}
+                    >
+                      {cuserMsg}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Huruf kecil/angka plus - dan _ (3-16 karakter).
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Input
+                    value={customPass}
+                    onChange={(e) => setCustomPass(e.target.value)}
+                    placeholder="Password — kosong = sama dengan username"
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={64}
+                    disabled={credsLocked}
+                  />
+                </div>
+              </div>
+            ) : null}
+
             <div className="tile space-y-0 divide-y divide-border/60">
               <CostRow
                 label="Kirim kode ke"
                 value={notifyPhone ?? "Nomor belum terdaftar"}
               />
+              {customCreds.enabled && !credsLocked && normalizedUser !== "" ? (
+                <CostRow label="Username" value={normalizedUser} />
+              ) : null}
               {effectiveQty > 1 ? (
                 <CostRow
                   label="Harga satuan"
@@ -885,6 +1045,28 @@ export default function VoucherView({
                 {codes.map((code) => (
                   <VoucherCode key={code} code={code} />
                 ))}
+                {/* Kredensial kustom: kode di atas = username; password tampil terpisah. */}
+                {active.customPass ? (
+                  <div className="tile flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Password</p>
+                      <p className="font-mono text-base font-bold">
+                        {active.customPass}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        void copyAllCodes([String(active.customPass)])
+                      }
+                    >
+                      <Copy />
+                      Salin
+                    </Button>
+                  </div>
+                ) : null}
                 {active.partial ? (
                   <div className="flex gap-3 rounded-xl border border-warning/25 bg-warning/10 p-3.5">
                     <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />

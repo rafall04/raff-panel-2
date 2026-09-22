@@ -53,6 +53,13 @@ export interface VoucherPurchase {
   voucherCodes?: string[];
   /** Lunas tapi kode yang terbit kurang dari qty — sisanya diproses admin. */
   partial?: boolean;
+  /**
+   * Username pilihan pembeli (custom creds). Untuk pembelian ini `voucherCodes` berisi
+   * username-nya; password hanya dikirim backend setelah lunas.
+   */
+  customUser?: string | null;
+  /** Password kustom — hanya terisi saat lunas; null untuk voucher kode acak. */
+  customPass?: string | null;
   createdAt: number | null;
   expiredAt: number | null;
 }
@@ -91,6 +98,12 @@ export interface VoucherFeatureStatus {
    * jangan tampilkan stepper jumlah sama sekali.
    */
   multiBuy?: { enabled: boolean; maxQty: number };
+  /**
+   * Gate username/password pilihan pembeli (backend `config.voucherCustomCreds`).
+   * Opsional: backend lama tidak mengirimnya — anggap OFF dan sembunyikan field kustom.
+   * Hanya berlaku untuk qty=1 (satu username tidak bisa dibagi banyak voucher).
+   */
+  customCreds?: { enabled: boolean };
 }
 
 export class VoucherService {
@@ -129,10 +142,31 @@ export class VoucherService {
   static async createPurchase(
     prof: string,
     qty = 1,
+    custom?: { username: string; password?: string },
   ): Promise<ApiResponse<VoucherCheckout>> {
     return serverApiClient.post<VoucherCheckout>(
       "/api/customer/vouchers/purchase",
-      { prof, qty },
+      {
+        prof,
+        qty,
+        // Kredensial pilihan pembeli — backend menormalisasi + cek duplikat (qty=1 saja).
+        ...(custom
+          ? { customUser: custom.username, customPass: custom.password }
+          : {}),
+      },
+    );
+  }
+
+  /**
+   * Probe ketersediaan username kustom untuk UX form. Jawaban SEMENTARA — validasi final
+   * tetap di POST /purchase (di dalam lock backend). 404 bila fitur custom creds OFF.
+   * Endpoint: GET /api/customer/vouchers/check-user?name=
+   */
+  static async checkUsername(
+    name: string,
+  ): Promise<ApiResponse<{ available: boolean; username?: string }>> {
+    return serverApiClient.get<{ available: boolean; username?: string }>(
+      `/api/customer/vouchers/check-user?name=${encodeURIComponent(name)}`,
     );
   }
 

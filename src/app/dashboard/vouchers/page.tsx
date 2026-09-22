@@ -36,6 +36,7 @@ export default async function VouchersPage() {
       qrisFeeRate={data.qrisFeeRate}
       notifyPhone={data.notifyPhone}
       multiBuy={data.multiBuy}
+      customCreds={data.customCreds}
     />
   );
 }

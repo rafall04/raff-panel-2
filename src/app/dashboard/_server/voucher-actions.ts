@@ -20,6 +20,11 @@ export interface VoucherPageData {
    * jumlah hanya tampil saat enabled, supaya UI tidak menjanjikan yang ditolak backend.
    */
   multiBuy: { enabled: boolean; maxQty: number };
+  /**
+   * Gate username/password pilihan pembeli (`voucherCustomCreds`). Default OFF — field
+   * kustom hanya tampil saat enabled, dan hanya untuk qty=1.
+   */
+  customCreds: { enabled: boolean };
   packages: VoucherPackage[];
   history: VoucherPurchase[];
 }
@@ -40,6 +45,7 @@ export async function getVoucherPageData(): Promise<VoucherPageData> {
     qrisFeeRate: 0.007,
     notifyPhone: null,
     multiBuy: { enabled: false, maxQty: 1 },
+    customCreds: { enabled: false },
     packages: [],
     history: [],
   };
@@ -91,11 +97,18 @@ export async function getVoucherPageData(): Promise<VoucherPageData> {
           }
         : empty.multiBuy;
 
+    // Field opsional — backend lama tidak mengirimnya; anggap OFF.
+    const customCreds =
+      status.data.customCreds && status.data.customCreds.enabled === true
+        ? { enabled: true }
+        : empty.customCreds;
+
     return {
       enabled: true,
       qrisFeeRate,
       notifyPhone: typeof phone === "string" && phone ? phone : null,
       multiBuy,
+      customCreds,
       packages,
       history,
     };
@@ -125,6 +138,7 @@ export interface CreateVoucherPurchaseResult {
 export async function createVoucherPurchase(
   prof: string,
   qty = 1,
+  custom?: { username: string; password?: string },
 ): Promise<CreateVoucherPurchaseResult> {
   if (!prof || typeof prof !== "string") {
     return { success: false, message: "Paket voucher tidak valid." };
@@ -132,10 +146,18 @@ export async function createVoucherPurchase(
   if (!Number.isInteger(qty) || qty < 1) {
     return { success: false, message: "Jumlah voucher tidak valid." };
   }
+  // Custom creds hanya untuk 1 voucher — backend menolak kombinasi lain; ditolak di
+  // sini lebih dulu supaya pesan tidak bergantung pada versi backend.
+  if (custom && qty !== 1) {
+    return {
+      success: false,
+      message: "Username sendiri hanya untuk pembelian 1 voucher.",
+    };
+  }
 
   try {
     const { VoucherService } = await import("@/services/voucher.service");
-    const response = await VoucherService.createPurchase(prof, qty);
+    const response = await VoucherService.createPurchase(prof, qty, custom);
 
     if (!response.success || !response.data) {
       return {
@@ -221,6 +243,71 @@ export async function getVoucherPurchaseStatus(
       error: error instanceof Error ? error.message : "unknown_error",
     });
     return { success: false, message: "Gagal memeriksa status transaksi." };
+  }
+}
+
+export interface VoucherUsernameCheckResult {
+  success: boolean;
+  available: boolean;
+  message?: string;
+  username?: string;
+  /** HTTP status dari backend (409=dipakai, 503=gagal cek) — untuk gaya pesan di UI. */
+  status?: number;
+}
+
+/**
+ * Probe ketersediaan username kustom untuk UX form (debounced dari klien).
+ * Jawaban SEMENTARA — validasi final tetap di createVoucherPurchase (lock backend).
+ * 404 dari backend berarti fitur OFF → dianggap "tidak tersedia" tanpa pesan.
+ */
+export async function checkVoucherUsername(
+  name: string,
+): Promise<VoucherUsernameCheckResult> {
+  const trimmed = String(name || "")
+    .trim()
+    .toLowerCase();
+  if (!trimmed) {
+    return { success: false, available: false, message: "Username kosong." };
+  }
+
+  try {
+    const { VoucherService } = await import("@/services/voucher.service");
+    const response = await VoucherService.checkUsername(trimmed);
+    const available = response.data?.available === true;
+    return {
+      success: response.success === true,
+      available,
+      message: response.message,
+      username: response.data?.username,
+    };
+  } catch (error) {
+    if (error instanceof ServerApiError && error.statusCode === 404) {
+      return { success: false, available: false, message: "", status: 404 };
+    }
+    // 4xx lain (username invalid/dipakai) bawa pesan backend yang bisa ditampilkan.
+    if (
+      error instanceof ServerApiError &&
+      error.statusCode >= 400 &&
+      error.statusCode < 500 &&
+      error.message
+    ) {
+      return {
+        success: false,
+        available: false,
+        message: error.message,
+        status: error.statusCode,
+      };
+    }
+    logPortalServerEvent("error", "voucher_username_check_error", {
+      domain: "voucher",
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+    return {
+      success: false,
+      available: false,
+      message: "Gagal memeriksa username.",
+      status: error instanceof ServerApiError ? error.statusCode : undefined,
+    };
   }
 }
 
